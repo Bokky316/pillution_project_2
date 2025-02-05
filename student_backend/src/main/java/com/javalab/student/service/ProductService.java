@@ -70,7 +70,7 @@ public class ProductService {
         Optional<Product> productOpt = productRepository.findById(productId);
         if (productOpt.isPresent()) {
             Product product = productOpt.get();
-            product.setActive(status); // 상태 값 설정 (1: 활성화, 0: 비활성화)
+            product.setActive(status == 1); // 상태 값 설정
             return Optional.of(productRepository.save(product)); // 수정된 상품 저장
         }
         return Optional.empty(); // 상품이 존재하지 않으면 비어있는 Optional 반환

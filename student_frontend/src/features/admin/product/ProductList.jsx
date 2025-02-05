@@ -129,7 +129,7 @@ const ProductList = ({ fetchProducts }) => {
                 <Button
                     variant="contained"
                     color="primary"
-                    onClick={() => openEditModal(params.row)}
+                    onClick={() => navigate(`/adminpage/products/${params.row.id}/edit`)}
                 >
                     수정
                 </Button>

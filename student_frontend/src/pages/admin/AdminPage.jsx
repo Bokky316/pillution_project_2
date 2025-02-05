@@ -5,6 +5,8 @@ import { setActiveMenu } from "../../redux/sidebarSlice";
 import SideBar from "../../features/admin/SideBar";
 import MemberManagement from "../../features/admin/member/MemberList";
 import EditMember from "../../features/admin/member/EditMember";
+import EditProduct from "../../features/admin/product/EditProduct";
+import AddProduct from "../../features/admin/product/AddProduct";
 import OrderManagement from "../../features/admin/order/OrderList";
 import ProductManagement from "../../features/admin/product/ProductList";
 import "./AdminPage.css";
@@ -28,6 +30,8 @@ const AdminPage = () => {
                     <Route path="members/:memberId/edit" element={<EditMember />} />
                     <Route path="orders" element={<OrderManagement onPageChange={() => handlePageChange("orders")} />} />
                     <Route path="products" element={<ProductManagement onPageChange={() => handlePageChange("products")} />} />
+                    <Route path="products/:productId/edit" element={<EditProduct />} />
+                    <Route path="products/add" element={<AddProduct />} /> {/* 상품 추가 */}
                 </Routes>
             </div>
         </div>

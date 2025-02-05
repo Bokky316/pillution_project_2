@@ -1,0 +1,82 @@
+/* EditProduct.css */
+.edit-product-container {
+    max-width: 600px;
+    margin: 50px auto;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.edit-product-title {
+    text-align: center;
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+
+.edit-product-form {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.image-preview {
+    text-align: center;
+    margin-top: 15px;
+}
+
+.image-preview img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+}
+
+.form-buttons {
+    display: flex;
+    justify-content: space-between;
+}
+
+.save-button,
+.cancel-button {
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 4px;
+    border: none;
+}
+
+.save-button {
+    background-color: #4caf50; /* 녹색 */
+    color: white;
+}
+
+.cancel-button {
+    background-color: #f44336; /* 빨간색 */
+    color: white;
+}
+
+.save-button:hover {
+    background-color: #45a049; /* 약간 더 어두운 녹색 */
+}
+
+.cancel-button:hover {
+    background-color: #e53935; /* 약간 더 어두운 빨간색 */
+}

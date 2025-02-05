@@ -55,8 +55,8 @@ public class Product {
 //}
 
 
-// 추천 시스템을 위한 점수 필드
-@Transient// 이 필드는 데이터베이스에 저장되지 않습니다.
-private int score;
+    // 추천 시스템을 위한 점수 필드
+    @Transient// 이 필드는 데이터베이스에 저장되지 않습니다.
+    private int score;
 
 }
