@@ -12,6 +12,7 @@ import SurveyPage from "@/pages/survey/SurveyPage";
 import ProductDetailPage from "@/pages/product/ProductDetailPage";
 import ProductListPage from "@/pages/product/ProductListPage";
 import CartPage from "@/pages/cart/CartPage";
+import AdminPage from './pages/admin/AdminPage';
 import Login from "@features/auth/components/Login";
 import MyPage from "@features/auth/components/MyPage";
 import RegisterMember from "@features/auth/components/RegisterMember";
@@ -68,6 +69,8 @@ function App() {
                 <Route path="/cart" element={isLoggedIn ? <CartPage /> : <Navigate to="/login" />} />
                 <Route path="/unauthorized" element={<UnauthorizedPage />} />
                 <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
+                <Route path="/adminpage/*" element={<AdminPage />} />
+
             </Routes>
             <Footer />
         </div>

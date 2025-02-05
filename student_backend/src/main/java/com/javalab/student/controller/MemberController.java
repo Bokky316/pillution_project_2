@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.Cookie;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -240,5 +241,48 @@ public class MemberController {
     void disableFavicon() {
         // 아무 작업도 하지 않음
     }
+    /**
+     * 회원 목록 조회 (페이징 처리)
+     * @param page - 페이지 번호
+     * @param size - 한 페이지에 보여줄 항목 수
+     * @return 회원 목록 및 총 회원 수를 포함한 JSON 응답
+     */
+    @GetMapping("/api/members/search")
+    public ResponseEntity<Map<String, Object>> searchMembers(
+            @RequestParam("type") String type, // 명시적으로 "type" 지정
+            @RequestParam("value") String value // 명시적으로 "value" 지정
+    ) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            List<Member> members;
+
+            // 검색 타입에 따라 처리
+            if ("name".equalsIgnoreCase(type)) {
+                members = memberService.findByNameContaining(value); // 이름으로 검색
+            } else if ("email".equalsIgnoreCase(type)) {
+                members = memberService.findByEmailContaining(value); // 이메일로 검색
+            } else {
+                response.put("status", "error");
+                response.put("message", "잘못된 검색 타입입니다.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // 성공 응답 구성
+            response.put("status", "success");
+            response.put("data", members);
+            response.put("total", members.size()); // 검색 결과 수 반환
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            // 오류 응답 구성
+            response.put("status", "error");
+            response.put("message", "검색 중 오류 발생: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+
+
+
 
 }

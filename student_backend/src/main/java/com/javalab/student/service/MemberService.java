@@ -5,9 +5,13 @@ import com.javalab.student.dto.MemberFormDto;
 import com.javalab.student.entity.Member;
 import com.javalab.student.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -116,6 +120,34 @@ public class MemberService {
         }
         member.deactivateMember(); //  비활성화 및 탈퇴일 저장
         memberRepository.save(member);
+    }
+    /**
+     * 페이징 처리된 회원 목록 반환
+     * @param page - 페이지 번호
+     * @param size - 한 페이지당 항목 수
+     * @return 회원 목록
+     */
+    public List<Member> getMemberList(int page, int size) {
+        Page<Member> memberPage = memberRepository.findAll(PageRequest.of(page, size));
+        return memberPage.getContent(); // 현재 페이지에 해당하는 회원 목록 반환
+    }
+
+    /**
+     * 총 회원 수 반환
+     * @return 총 회원 수
+     */
+    public long getTotalMemberCount() {
+        return memberRepository.count(); // 총 회원 수 반환
+    }
+
+    @Transactional(readOnly = true)
+    public List<Member> findByNameContaining(String name) {
+        return memberRepository.findByNameContaining(name);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Member> findByEmailContaining(String email) {
+        return memberRepository.findByEmailContaining(email);
     }
 
 }

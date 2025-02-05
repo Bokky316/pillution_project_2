@@ -105,9 +105,13 @@ const Header = () => {
                       <>
                         <Typography variant="body1" sx={{ mr: 2 }}>
                           {user.name}
-                          {user.role === "ADMIN" ? " (관리자)" : " (사용자)"}
+                          {user?.roles?.includes("ROLE_ADMIN") ? " (관리자)" : " (사용자)"}
                         </Typography>
                         <Button color="inherit" onClick={() => navigate("/mypage")}>마이페이지</Button>
+                        {/* 관리자일 경우 관리자 페이지로 가는 버튼 추가 */}
+                        {user?.roles?.includes("ROLE_ADMIN") && (
+                            <Button color="inherit" component={Link} to="/adminpage">관리자 페이지</Button>
+                        )}
                         <Button color="inherit" onClick={handleLogout}>
                           {user.social ? '소셜 로그아웃' : '로그아웃'}
                         </Button>
