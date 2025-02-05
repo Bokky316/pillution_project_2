@@ -11,6 +11,8 @@ import com.javalab.student.service.RefreshTokenService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -247,39 +249,30 @@ public class MemberController {
      * @param size - 한 페이지에 보여줄 항목 수
      * @return 회원 목록 및 총 회원 수를 포함한 JSON 응답
      */
-    @GetMapping("/api/members/search")
-    public ResponseEntity<Map<String, Object>> searchMembers(
-            @RequestParam("type") String type, // 명시적으로 "type" 지정
-            @RequestParam("value") String value // 명시적으로 "value" 지정
-    ) {
+    @GetMapping
+    public ResponseEntity<Map<String, Object>> getMemberList(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size) {
+
         Map<String, Object> response = new HashMap<>();
         try {
-            List<Member> members;
+            Page<Member> memberPage = memberService.getMemberList(page, size);
 
-            // 검색 타입에 따라 처리
-            if ("name".equalsIgnoreCase(type)) {
-                members = memberService.findByNameContaining(value); // 이름으로 검색
-            } else if ("email".equalsIgnoreCase(type)) {
-                members = memberService.findByEmailContaining(value); // 이메일로 검색
-            } else {
-                response.put("status", "error");
-                response.put("message", "잘못된 검색 타입입니다.");
-                return ResponseEntity.badRequest().body(response);
-            }
-
-            // 성공 응답 구성
             response.put("status", "success");
-            response.put("data", members);
-            response.put("total", members.size()); // 검색 결과 수 반환
-            return ResponseEntity.ok(response);
+            response.put("data", memberPage.getContent());
+            response.put("total", memberPage.getTotalElements());
+            response.put("totalPages", memberPage.getTotalPages());
+            response.put("currentPage", memberPage.getNumber());
 
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
-            // 오류 응답 구성
             response.put("status", "error");
-            response.put("message", "검색 중 오류 발생: " + e.getMessage());
+            response.put("message", "서버 오류 발생");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
+
+
 
 
 

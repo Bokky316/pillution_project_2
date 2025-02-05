@@ -127,9 +127,8 @@ public class MemberService {
      * @param size - 한 페이지당 항목 수
      * @return 회원 목록
      */
-    public List<Member> getMemberList(int page, int size) {
-        Page<Member> memberPage = memberRepository.findAll(PageRequest.of(page, size));
-        return memberPage.getContent(); // 현재 페이지에 해당하는 회원 목록 반환
+    public Page<Member> getMemberList(int page, int size) {
+        return memberRepository.findAll(PageRequest.of(page, size));
     }
 
     /**

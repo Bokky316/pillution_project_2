@@ -3,6 +3,7 @@ import { Button, Snackbar } from '@mui/material';
 import { useState, useEffect } from 'react';
 import { API_URL } from "../../../constant";
 import { useNavigate } from "react-router-dom";
+import './MemberList.css';
 
 const MemberList = () => {
     const [members, setMembers] = useState([]);
@@ -21,27 +22,28 @@ const MemberList = () => {
 
     const fetchMembersData = () => {
         const { page, pageSize } = paginationModel;
-        fetch(`${API_URL}members?status=${statusFilter}&page=${page}&size=${pageSize}`, {
+
+        // 요청 URL을 ProductList와 동일하게 간단하게 만듦
+        fetch(`${API_URL}members?page=${page}&size=${pageSize}&status=${statusFilter}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
-                // 여기에 Authorization 헤더를 추가하고 싶다면 아래처럼 추가할 수 있습니다.
-                // 'Authorization': `Bearer ${accessToken}`,
+                'Authorization': `Bearer ${localStorage.getItem("accToken")}`,  // JWT 토큰을 헤더에 추가
             },
-            credentials: 'include', // HttpOnly 쿠키를 포함해서 요청
+            credentials: 'include', // HttpOnly 쿠키 포함
         })
-            .then((response) => response.json())
-            .then((data) => {
-                setMembers(data.data || []);
-                setTotalRows(data.total || 0);
-            })
-            .catch((error) => {
-                console.error(error);
-                setSnackbarMessage('회원 정보를 가져오는 데 실패했습니다.');
-                setSnackbarOpen(true);
-            });
-
+        .then((response) => response.json())
+        .then((data) => {
+            setMembers(data.data || []);
+            setTotalRows(data.total || 0);
+        })
+        .catch((error) => {
+            console.error('Error fetching data:', error);
+            setSnackbarMessage('회원 정보를 가져오는 데 실패했습니다.');
+            setSnackbarOpen(true);
+        });
     };
+
 
     // 검색 기능 실행 함수
     const handleSearch = () => {
@@ -116,55 +118,55 @@ const MemberList = () => {
     ];
 
     return (
-        <div>
-            <h3>회원 관리</h3>
+            <div className="member-list-container">
+                <div className="member-list-header">
+                    <h3>회원 관리</h3>
+                    <span className="total-members">총 회원수 : {totalRows}</span>
+                </div>
 
-            {/* 총 회원 수 */}
-            <p>총 회원수 : {totalRows}</p>
+                <div className="search-container">
+                    <select className="status-filter" onChange={(e) => setStatusFilter(e.target.value)} value={statusFilter}>
+                        <option value="">전체</option>
+                        <option value="ACTIVE">활성회원</option>
+                        <option value="INACTIVE">휴먼회원</option>
+                        <option value="DELETED">탈퇴회원</option>
+                    </select>
 
-            {/* 활성 상태 필터 */}
-            <select onChange={(e) => setStatusFilter(e.target.value)} value={statusFilter}>
-                <option value="">전체</option>
-                <option value="ACTIVE">활성회원</option>
-                <option value="INACTIVE">휴먼회원</option>
-                <option value="DELETED">탈퇴회원</option>
-                </select>
+                    <select className="search-type" onChange={(e) => setSearchType(e.target.value)} value={searchType}>
+                        <option value="name">이름</option>
+                        <option value="email">이메일</option>
+                    </select>
+                    <input
+                        className="search-input"
+                        type="text"
+                        placeholder="검색어를 입력하세요"
+                        value={searchInput}
+                        onChange={(e) => setSearchInput(e.target.value)}
+                    />
+                    <button className="search-button" onClick={handleSearch}>
+                        검색
+                    </button>
+                </div>
 
-            {/* 검색 기능 */}
-            <div style={{ marginTop: "10px", marginBottom: "20px" }}>
-                <select onChange={(e) => setSearchType(e.target.value)} value={searchType}>
-                <option value="name">이름</option>
-                <option value="email">이메일</option>
-            </select>
-            <input
-                type="text"
-                placeholder="검색어를 입력하세요"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                style={{ marginLeft: "10px" }}
-            />
-            <button onClick={handleSearch} style={{ marginLeft: "10px" }}>
-                검색
-            </button>
-        </div>
-
-            <DataGrid
-                rows={members}
-                columns={columns}
-                rowCount={totalRows}
-                paginationMode="server"
-                pageSizeOptions={[5, 10, 20]}
-                paginationModel={paginationModel}
-                onPaginationModelChange={(newModel) => setPaginationModel(newModel)}
-            />
-            <Snackbar
-                open={snackbarOpen}
-                autoHideDuration={3000}
-                onClose={() => setSnackbarOpen(false)}
-                message={snackbarMessage}
-            />
-        </div>
-    );
+                <DataGrid
+                    autoHeight
+                    rows={members}
+                    columns={columns}
+                    rowCount={totalRows}
+                    paginationMode="server"
+                    pageSizeOptions={[5, 10, 20]}
+                    paginationModel={paginationModel}
+                    onPaginationModelChange={(newModel) => setPaginationModel(newModel)}
+                    sx={{ minHeight: '400px' }}
+                />
+                <Snackbar
+                    open={snackbarOpen}
+                    autoHideDuration={3000}
+                    onClose={() => setSnackbarOpen(false)}
+                    message={snackbarMessage}
+                />
+            </div>
+        );
 };
 
 export default MemberList;

@@ -1,0 +1,24 @@
+.product-list-container {
+    padding: 20px;
+}
+
+.product-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.search-container {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.search-select {
+    min-width: 120px;
+}
+
+.search-input {
+    flex-grow: 1;
+}

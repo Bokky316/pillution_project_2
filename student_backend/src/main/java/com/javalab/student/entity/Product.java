@@ -30,7 +30,7 @@ public class Product {
     private int stock;
 
     @Column(nullable = false)
-    private int active;
+    private boolean active;
 
     // 메인 이미지 경로 (대표 이미지)
     private String mainImageUrl;

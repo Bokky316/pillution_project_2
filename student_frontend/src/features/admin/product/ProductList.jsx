@@ -14,27 +14,25 @@ const ProductList = ({ fetchProducts }) => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const navigate = useNavigate();
 
+
     useEffect(() => {
         fetchProductsData();
     }, [paginationModel]);
 
     const fetchProductsData = () => {
         const { page, pageSize } = paginationModel;
-
-        // 로그인 후 토큰을 localStorage에서 가져옵니다.
-        const token = localStorage.getItem('accessToken');  // 저장된 토큰을 가져옴
+        const token = localStorage.getItem('accessToken');
 
         fetch(`${API_URL}products?page=${page}&size=${pageSize}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': token ? `Bearer ${token}` : '', // 토큰이 있으면 Authorization 헤더에 추가
+                'Authorization': token ? `Bearer ${token}` : '',
             },
-            credentials: 'include', // HttpOnly 쿠키를 포함해서 요청
+            credentials: 'include',
         })
             .then((response) => {
                 if (response.status === 401) {
-                    // 인증 실패 시 처리
                     setSnackbarMessage('인증이 필요합니다. 다시 로그인해 주세요.');
                     setSnackbarOpen(true);
                 }
@@ -51,31 +49,31 @@ const ProductList = ({ fetchProducts }) => {
             });
     };
 
-    const deleteProduct = (id) => {
-        if (window.confirm('정말로 삭제하시겠습니까?')) {
-            const token = localStorage.getItem('accessToken');
+    const toggleProductStatus = (id, currentStatus) => {
+        const token = localStorage.getItem('accessToken');
+        const newStatus = currentStatus === 1 ? 0 : 1; // 1: 활성화, 0: 비활성화
 
-            fetch(`${API_URL}products/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': token ? `Bearer ${token}` : '', // 인증 토큰 포함
-                },
+        fetch(`${API_URL}products/${id}/toggle-status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': token ? `Bearer ${token}` : '',
+            },
+            body: JSON.stringify({ active: newStatus }),
+        })
+            .then((response) => {
+                if (response.ok) {
+                    fetchProductsData();
+                    setSnackbarMessage(`상품이 ${newStatus === 1 ? '활성화' : '비활성화'}되었습니다.`);
+                    setSnackbarOpen(true);
+                } else if (response.status === 401) {
+                    setSnackbarMessage('인증이 필요합니다. 다시 로그인해 주세요.');
+                    setSnackbarOpen(true);
+                } else {
+                    alert('상품 상태 변경 실패');
+                }
             })
-                .then((response) => {
-                    if (response.ok) {
-                        fetchProductsData();
-                        setSnackbarMessage('상품이 삭제되었습니다.');
-                        setSnackbarOpen(true);
-                    } else if (response.status === 401) {
-                        setSnackbarMessage('인증이 필요합니다. 다시 로그인해 주세요.');
-                        setSnackbarOpen(true);
-                    } else {
-                        alert('상품 삭제 실패');
-                    }
-                })
-                .catch((error) => console.error(error));
-        }
+            .catch((error) => console.error(error));
     };
 
     const openEditModal = (product) => {
@@ -95,7 +93,7 @@ const ProductList = ({ fetchProducts }) => {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': token ? `Bearer ${token}` : '', // 인증 토큰 포함
+                'Authorization': token ? `Bearer ${token}` : '',
             },
             body: JSON.stringify(updatedProduct),
         })
@@ -136,24 +134,29 @@ const ProductList = ({ fetchProducts }) => {
             ),
         },
         {
-            field: 'delete',
-            headerName: '삭제',
+            field: 'manage',
+            headerName: '관리',
             flex: 1,
             renderCell: (params) => (
                 <Button
                     variant="contained"
-                    color="secondary"
-                    onClick={() => deleteProduct(params.row.id)}
+                    color={params.row.active === 1 ? "primary" : "secondary"}
+                    onClick={() => toggleProductStatus(params.row.id, params.row.active)}
                 >
-                    삭제
+                    {params.row.active === 1 ? '비활성화' : '활성화'}
                 </Button>
             ),
         },
     ];
 
     return (
-        <div style={{ height: 700, width: '100%' }}>
-            <h3>상품 관리</h3>
+        <div style={{ width: '100%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h3>상품 관리</h3>
+                <Button variant="contained" color="primary" onClick={() => navigate('/adminpage/products/add')}>
+                    상품 등록
+                </Button>
+            </div>
             <DataGrid
                 rows={products}
                 columns={columns}
@@ -171,10 +174,6 @@ const ProductList = ({ fetchProducts }) => {
                 onClose={() => setSnackbarOpen(false)}
                 message={snackbarMessage}
             />
-
-            <Button variant="contained" onClick={() => navigate('/addProduct')}>
-                상품 등록
-            </Button>
 
             {isEditModalOpen && (
                 <EditProduct
