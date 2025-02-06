@@ -6,32 +6,38 @@ import './AddProduct.css';
 
 const AddProduct = () => {
     const [product, setProduct] = useState({
-        category: '',
+        categoryIds: [],
         name: '',
         price: '',
         stock: '',
         description: '',
-        active: 1
+        active: true,
     });
     const [images, setImages] = useState({
-        image1: null,
-        image2: null,
-        image3: null
+        mainImage: null,
     });
     const [imagePreviews, setImagePreviews] = useState({
-        image1: null,
-        image2: null,
-        image3: null
+        mainImage: null,
     });
+    const [ingredients, setIngredients] = useState([]);  // 영양 성분 선택
     const navigate = useNavigate();
 
     const categories = ['의류', '전자기기', '식품', '가구', '도서'];
+    const availableIngredients = ['성분1', '성분2', '성분3'];  // 영양 성분 리스트 예시
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setProduct({
             ...product,
-            [name]: name === 'price' || name === 'stock' || name === 'active' ? Number(value) : value,
+            [name]: name === 'price' || name === 'stock' ? Number(value) : value,
+        });
+    };
+
+    const handleCategoryChange = (e) => {
+        const { value } = e.target;
+        setProduct({
+            ...product,
+            categoryIds: value, // 카테고리 IDs로 업데이트
         });
     };
 
@@ -49,18 +55,31 @@ const AddProduct = () => {
         }
     };
 
+    const handleIngredientChange = (e) => {
+        const { value } = e.target;
+        setIngredients(value);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         const token = localStorage.getItem('accessToken');
 
         const formData = new FormData();
         for (const key in product) {
-            formData.append(key, product[key]);
-        }
-        for (const key in images) {
-            if (images[key]) {
-                formData.append(key, images[key]);
+            if (key === 'categoryIds') {
+                // 카테고리 선택을 위한 처리
+                formData.append('categoryIds', JSON.stringify(product.categoryIds));
+            } else {
+                formData.append(key, product[key]);
             }
+        }
+
+        if (images.mainImage) {
+            formData.append('mainImage', images.mainImage);
+        }
+
+        for (let ingredient of ingredients) {
+            formData.append('ingredientIds', ingredient);
         }
 
         try {
@@ -91,14 +110,15 @@ const AddProduct = () => {
                 <FormControl fullWidth margin="normal">
                     <InputLabel>카테고리</InputLabel>
                     <Select
-                        name="category"
-                        value={product.category}
-                        onChange={handleChange}
+                        name="categoryIds"
+                        value={product.categoryIds}
+                        onChange={handleCategoryChange}
+                        multiple
                         required
                     >
                         <MenuItem value="" disabled>카테고리를 선택하세요</MenuItem>
-                        {categories.map((category) => (
-                            <MenuItem key={category} value={category}>{category}</MenuItem>
+                        {categories.map((category, index) => (
+                            <MenuItem key={index} value={category}>{category}</MenuItem>
                         ))}
                     </Select>
                 </FormControl>
@@ -143,26 +163,34 @@ const AddProduct = () => {
                     margin="normal"
                 />
                 <Box sx={{ mt: 2 }}>
-                        <InputLabel sx={{ mb: 1 }}>상품 이미지</InputLabel>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                            {['image1', 'image2', 'image3'].map((imageName, index) => (
-                                <div key={imageName} className="image-upload-box">
-                                    {imagePreviews[imageName] ? (
-                                        <img className="image-preview" src={imagePreviews[imageName]} alt={`Preview ${imageName}`} />
-                                    ) : (
-                                        <span>이미지 {index + 1}</span>
-                                    )}
-                                    <input
-                                        className="file-input"
-                                        type="file"
-                                        name={imageName}
-                                        onChange={handleImageChange}
-                                        accept="image/*"
-                                    />
-                                </div>
-                            ))}
-                        </Box>
-                    </Box>
+                    <InputLabel sx={{ mb: 1 }}>상품 이미지</InputLabel>
+                    <input
+                        className="file-input"
+                        type="file"
+                        name="mainImage"
+                        onChange={handleImageChange}
+                        accept="image/*"
+                    />
+                    {imagePreviews.mainImage && (
+                        <img className="image-preview" src={imagePreviews.mainImage} alt="Preview" />
+                    )}
+                </Box>
+
+                <FormControl fullWidth margin="normal">
+                    <InputLabel>영양 성분</InputLabel>
+                    <Select
+                        multiple
+                        value={ingredients}
+                        onChange={handleIngredientChange}
+                        name="ingredients"
+                    >
+                        {availableIngredients.map((ingredient, index) => (
+                            <MenuItem key={index} value={ingredient}>
+                                {ingredient}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
 
                 <FormControl fullWidth margin="normal" variant="outlined">
                     <InputLabel shrink htmlFor="active-select">상품 활성화</InputLabel>
@@ -173,19 +201,14 @@ const AddProduct = () => {
                         onChange={handleChange}
                         label="상품 활성화"
                     >
-                        <MenuItem value={1}>활성화</MenuItem>
-                        <MenuItem value={0}>비활성화</MenuItem>
+                        <MenuItem value={true}>활성화</MenuItem>
+                        <MenuItem value={false}>비활성화</MenuItem>
                     </Select>
                 </FormControl>
 
-
                 <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between' }}>
-                    <Button type="submit" variant="contained" color="primary">
-                        저장
-                    </Button>
-                    <Button variant="outlined" color="secondary" onClick={() => navigate('/adminpage/products')}>
-                        취소
-                    </Button>
+                    <Button type="submit" variant="contained" color="primary">저장</Button>
+                    <Button variant="outlined" color="secondary" onClick={() => navigate('/adminpage/products')}>취소</Button>
                 </Box>
             </form>
         </Box>

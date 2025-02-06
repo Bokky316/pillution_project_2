@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { TextField, Button, Box, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { API_URL } from "../../../constant";
-import "./EditProduct.css"; // CSS 파일 추가
+import './EditProduct.css'; // CSS 파일 추가
 
 const EditProduct = () => {
     const { productId } = useParams(); // URL에서 productId 추출
@@ -47,81 +48,95 @@ const EditProduct = () => {
     if (!product) return <div>Loading...</div>;
 
     return (
-        <div className="edit-product-container">
+        <Box sx={{ maxWidth: '600px', margin: '50px auto', padding: '20px', backgroundColor: '#fff', boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)', borderRadius: '8px' }}>
             <h2 className="edit-product-title">상품 수정</h2>
             <form className="edit-product-form" onSubmit={handleSubmit}>
-                <div className="form-group">
-                    <label>상품명:</label>
-                    <input
-                        type="text"
-                        name="name"
-                        value={product.name || ""}
-                        onChange={handleChange}
-                        required
-                    />
-                </div>
-                <div className="form-group">
-                    <label>가격:</label>
-                    <input
-                        type="number"
-                        name="price"
-                        value={product.price || ""}
-                        onChange={handleChange}
-                        required
-                    />
-                </div>
-                <div className="form-group">
-                    <label>카테고리:</label>
-                    <input
-                        type="text"
+                <FormControl fullWidth margin="normal">
+                    <InputLabel>카테고리</InputLabel>
+                    <Select
                         name="category"
-                        value={product.category || ""}
+                        value={product.category}
                         onChange={handleChange}
                         required
-                    />
+                    >
+                        <MenuItem value="의류">의류</MenuItem>
+                        <MenuItem value="전자기기">전자기기</MenuItem>
+                        <MenuItem value="식품">식품</MenuItem>
+                        <MenuItem value="가구">가구</MenuItem>
+                        <MenuItem value="도서">도서</MenuItem>
+                    </Select>
+                </FormControl>
+
+                <TextField
+                    fullWidth
+                    label="상품명"
+                    name="name"
+                    value={product.name}
+                    onChange={handleChange}
+                    required
+                    margin="normal"
+                />
+                <TextField
+                    fullWidth
+                    label="가격"
+                    name="price"
+                    type="number"
+                    value={product.price}
+                    onChange={handleChange}
+                    required
+                    margin="normal"
+                />
+                <TextField
+                    fullWidth
+                    label="재고"
+                    name="stock"
+                    type="number"
+                    value={product.stock}
+                    onChange={handleChange}
+                    required
+                    margin="normal"
+                />
+                <TextField
+                    fullWidth
+                    label="상품 상세 내용"
+                    name="description"
+                    value={product.description}
+                    onChange={handleChange}
+                    required
+                    multiline
+                    rows={4}
+                    margin="normal"
+                />
+
+                <div className="image-upload-container">
+                    {['image1', 'image2', 'image3'].map((imageName, index) => (
+                        <div key={imageName} className="image-upload-box">
+                            {product[imageName] ? (
+                                <img className="image-preview" src={product[imageName]} alt={`Preview ${imageName}`} />
+                            ) : (
+                                <span>이미지 {index + 1}</span>
+                            )}
+                            <input
+                                className="file-input"
+                                type="file"
+                                name={imageName}
+                                onChange={(e) => handleImageChange(e)}
+                                accept="image/*"
+                            />
+                        </div>
+                    ))}
                 </div>
-                <div className="form-group">
-                    <label>재고:</label>
-                    <input
-                        type="number"
-                        name="stock"
-                        value={product.stock || ""}
-                        onChange={handleChange}
-                        required
-                    />
-                </div>
-                <div className="form-group">
-                    <label>상세 설명:</label>
-                    <textarea
-                        name="description"
-                        value={product.description || ""}
-                        onChange={handleChange}
-                        rows={4}
-                        required
-                    />
-                </div>
-                <div className="form-group">
-                    <label>이미지 URL:</label>
-                    <input
-                        type="text"
-                        name="imageUrl"
-                        value={product.imageUrl || ""}
-                        onChange={handleChange}
-                    />
-                </div>
-                {product.imageUrl && (
-                    <div className="image-preview">
-                        <img src={product.imageUrl} alt="상품 이미지 미리보기" />
-                    </div>
-                )}
-                <div className="form-buttons">
-                    <button type="submit" className="save-button">저장</button>
-                    <button type="button" className="cancel-button" onClick={() => navigate("/adminpage/products")}>
+
+                <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between' }}>
+                    <Button type="submit" variant="contained" color="primary" sx={{ width: '48%' }}>
+                        저장
+                    </Button>
+                    <Button variant="outlined" color="secondary" sx={{ width: '48%' }} onClick={() => navigate('/adminpage/products')}>
                         취소
-                    </button>
-                </div>
+                    </Button>
+                </Box>
             </form>
-        </div>
+        </Box>
     );
 };
 

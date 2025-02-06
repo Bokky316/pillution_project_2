@@ -39,7 +39,7 @@ const ProductList = ({ fetchProducts }) => {
                 return response.json();
             })
             .then((data) => {
-                setProducts(data.data || []);
+                setProducts(data.dtoList || []);
                 setTotalRows(data.total || 0);
             })
             .catch((error) => {

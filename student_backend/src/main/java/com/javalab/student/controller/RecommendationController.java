@@ -91,8 +91,11 @@ public class RecommendationController {
             String userEmail = authentication.getName();
             logger.info("Fetching recommendations for user: {} in category: {}", userEmail, categoryId);
 
+            // 여기서는 카테고리 ID를 사용하지 않고, 전체 추천을 가져옵니다.
+            // 카테고리별 필터링은 프론트엔드에서 처리하거나,
+            // RecommendationService에 새로운 메서드를 추가해야 할 수 있습니다.
             Map<String, List<ProductRecommendationDTO>> recommendations =
-                    recommendationService.recommendProductsByCategory(categoryId, userEmail);
+                    recommendationService.recommendProducts(userEmail);
 
             response.put("status", "success");
             response.put("data", recommendations);
