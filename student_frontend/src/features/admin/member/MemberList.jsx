@@ -95,10 +95,19 @@ const MemberList = () => {
         { field: 'id', headerName: 'ID', flex: 1 },
         { field: 'name', headerName: '이름', flex: 2 },
         { field: 'email', headerName: '이메일', flex: 2 },
-        { field: 'dob', headerName: '생년월일', flex: 2 },
+        { field: 'birthDate', headerName: '생년월일', flex: 2 },
         { field: 'gender', headerName: '성별', flex: 1 },
         { field: 'phone', headerName: '휴대폰번호', flex: 2 },
-        { field: 'status', headerName: '활성상태', flex: 2 },
+        {
+                field: 'activate',
+                    headerName: '활성상태',
+                    flex: 2,
+                    renderCell: (params) => (
+                        <span style={{ color: params.value ? 'green' : 'red' }}>
+                            {params.value ? '활성회원' : '탈퇴회원'}
+                        </span>
+                    ),
+            },
         { field: 'subscription', headerName: '구독여부', flex: 2 },
         {
             field: 'edit',
@@ -128,7 +137,7 @@ const MemberList = () => {
                     <select className="status-filter" onChange={(e) => setStatusFilter(e.target.value)} value={statusFilter}>
                         <option value="">전체</option>
                         <option value="ACTIVE">활성회원</option>
-                        <option value="INACTIVE">휴먼회원</option>
+                        {/* <option value="INACTIVE">휴먼회원</option> */}
                         <option value="DELETED">탈퇴회원</option>
                     </select>
 

@@ -140,7 +140,6 @@ const EditMember = () => {
                     >
                         <MenuItem value="남성">남성</MenuItem>
                         <MenuItem value="여성">여성</MenuItem>
-                        <MenuItem value="기타">기타</MenuItem>
                     </Select>
                 </FormControl>
                 <TextField
@@ -161,8 +160,8 @@ const EditMember = () => {
                         value={member.activate ? "활성" : "비활성"}
                         onChange={(e) => setMember({ ...member, activate: e.target.value === "활성" })}
                     >
-                        <MenuItem value="활성">활성</MenuItem>
-                        <MenuItem value="비활성">비활성</MenuItem>
+                        <MenuItem value="활성">활성회원</MenuItem>
+                        <MenuItem value="비활성">탈퇴회원</MenuItem>
                     </Select>
                 </FormControl>
                 <div className="edit-member-buttons">

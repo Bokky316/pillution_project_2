@@ -82,6 +82,7 @@ public class MemberService {
 
 
 
+
     /**
      * 이메일 중복 체크
      * @param email - 클라이언트에서 입력받은 이메일
