@@ -114,11 +114,17 @@ public class ProductServiceImpl implements ProductService {
      */
     public PageResponseDTO<ProductDto> getAllProducts(PageRequestDTO pageRequestDTO) {
         Pageable pageable = pageRequestDTO.getPageable("id");
-        Page<Product> result = productRepository.findAll(pageable);
+        Page<Product> result = productRepository.findAllWithCategories(pageable);
 
-        List<ProductDto> dtoList = result.getContent().stream()
-                .map(product -> modelMapper.map(product, ProductDto.class))
-                .collect(Collectors.toList());
+        List<ProductDto> dtoList = result.getContent().stream().map(product -> {
+            ProductDto productDto = modelMapper.map(product, ProductDto.class);
+            List<ProductCategoryDto> categoryDtos = product.getCategories().stream()
+                    .map(category -> modelMapper.map(category, ProductCategoryDto.class))
+                    .collect(Collectors.toList());
+            productDto.setCategories(categoryDtos);
+            System.out.println("Product: " + product.getName() + ", Categories: " + categoryDtos);
+            return productDto;
+        }).collect(Collectors.toList());
 
         return PageResponseDTO.<ProductDto>builder()
                 .dtoList(dtoList)
@@ -126,6 +132,9 @@ public class ProductServiceImpl implements ProductService {
                 .pageRequestDTO(pageRequestDTO)
                 .build();
     }
+
+
+
 
     /**
      * 특정 상품을 활성/비활성화 합니다.

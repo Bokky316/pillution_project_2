@@ -3,6 +3,7 @@ package com.javalab.student.dto;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * 상품 DTO
@@ -20,5 +21,6 @@ public class ProductDto {
     private int stock;
     private boolean active;
     private String mainImageUrl;
+    private List<ProductCategoryDto> categories;
 }
 

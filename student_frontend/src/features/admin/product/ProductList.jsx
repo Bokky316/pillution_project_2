@@ -14,7 +14,6 @@ const ProductList = ({ fetchProducts }) => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const navigate = useNavigate();
 
-
     useEffect(() => {
         fetchProductsData();
     }, [paginationModel]);
@@ -39,6 +38,7 @@ const ProductList = ({ fetchProducts }) => {
                 return response.json();
             })
             .then((data) => {
+                console.log('Received product data:', JSON.stringify(data, null, 2));
                 setProducts(data.dtoList || []);
                 setTotalRows(data.total || 0);
             })
@@ -49,75 +49,11 @@ const ProductList = ({ fetchProducts }) => {
             });
     };
 
-    const toggleProductStatus = (id, currentStatus) => {
-        const token = localStorage.getItem('accessToken');
-        const newStatus = currentStatus === 1 ? 0 : 1; // 1: 활성화, 0: 비활성화
-
-        fetch(`${API_URL}products/${id}/toggle-status`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': token ? `Bearer ${token}` : '',
-            },
-            body: JSON.stringify({ active: newStatus }),
-        })
-            .then((response) => {
-                if (response.ok) {
-                    fetchProductsData();
-                    setSnackbarMessage(`상품이 ${newStatus === 1 ? '활성화' : '비활성화'}되었습니다.`);
-                    setSnackbarOpen(true);
-                } else if (response.status === 401) {
-                    setSnackbarMessage('인증이 필요합니다. 다시 로그인해 주세요.');
-                    setSnackbarOpen(true);
-                } else {
-                    alert('상품 상태 변경 실패');
-                }
-            })
-            .catch((error) => console.error(error));
-    };
-
-    const openEditModal = (product) => {
-        setSelectedProduct(product);
-        setIsEditModalOpen(true);
-    };
-
-    const closeEditModal = () => {
-        setSelectedProduct(null);
-        setIsEditModalOpen(false);
-    };
-
-    const updateProduct = (updatedProduct) => {
-        const token = localStorage.getItem('accessToken');
-
-        fetch(`${API_URL}products/${updatedProduct.id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': token ? `Bearer ${token}` : '',
-            },
-            body: JSON.stringify(updatedProduct),
-        })
-            .then((response) => {
-                if (response.ok) {
-                    fetchProductsData();
-                    setSnackbarMessage('상품 정보가 수정되었습니다.');
-                    setSnackbarOpen(true);
-                } else if (response.status === 401) {
-                    setSnackbarMessage('인증이 필요합니다. 다시 로그인해 주세요.');
-                    setSnackbarOpen(true);
-                } else {
-                    alert('상품 수정 실패');
-                }
-            })
-            .catch((error) => console.error(error))
-            .finally(() => closeEditModal());
-    };
-
     const columns = [
         { field: 'id', headerName: 'ID', flex: 1 },
         { field: 'name', headerName: '상품명', flex: 2 },
         { field: 'price', headerName: '가격', flex: 2 },
-        { field: 'category', headerName: '카테고리', flex: 2 },
+        { field: 'category', headerName: '카테고리', flex: 2, renderCell: (params) => renderCategories(params.row.categories) },
         { field: 'stock', headerName: '재고', flex: 1 },
         {
             field: 'edit',
@@ -149,6 +85,17 @@ const ProductList = ({ fetchProducts }) => {
         },
     ];
 
+    const renderCategories = (categories) => {
+      if (!categories || categories.length === 0) {
+        return '-';
+      }
+      return categories.map(category => category.name).join(', ');
+    };
+
+
+
+
+
     return (
         <div style={{ width: '100%' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -174,14 +121,6 @@ const ProductList = ({ fetchProducts }) => {
                 onClose={() => setSnackbarOpen(false)}
                 message={snackbarMessage}
             />
-
-            {isEditModalOpen && (
-                <EditProduct
-                    productData={selectedProduct}
-                    updateProduct={updateProduct}
-                    onClose={closeEditModal}
-                />
-            )}
         </div>
     );
 };

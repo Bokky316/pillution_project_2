@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
 import java.util.List;
+import org.hibernate.annotations.BatchSize;
 
 /**
  * 영양제 상품 정보를 나타내는 엔티티 클래스입니다.
@@ -70,7 +71,7 @@ public class Product {
      * 상품이 속한 카테고리 목록
      * 다대다 관계로, product_category_mapping 테이블을 통해 매핑됩니다.
      */
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "product_category_mapping",
             joinColumns = @JoinColumn(name = "product_id"),
