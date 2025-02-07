@@ -2,67 +2,101 @@ import { useState, useEffect } from 'react';
 import { TextField, Button, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { API_URL } from "../../../constant";
 import { useNavigate, useParams } from "react-router-dom";
-import './EditMember.css'; // CSS 파일 추가
+import './EditMember.css';
 
 const EditMember = () => {
     const [member, setMember] = useState({
-      id: '',
-      name: '',
-      email: '',
-      dob: '',
-      gender: '',
-      phone: '',
-      status: '',
-      subscription: false
+        id: '',
+        name: '',
+        email: '',
+        phone: '',
+        address: '',
+        birthDate: '',
+        gender: '',
+        activate: false,
+        role: ''
     });
-    const [isLoading, setIsLoading] = useState(true); // 로딩 상태
+    const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
-    const { memberId } = useParams(); // URL에서 memberId 가져오기
+    const { memberId } = useParams();
 
     // 회원 정보 가져오기
     useEffect(() => {
-      fetch(`${API_URL}members/${memberId}`, {
-        method: 'GET',
-        credentials: 'include',
-      })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          return response.json();
+        fetch(`${API_URL}members/${memberId}`, {
+            method: 'GET',
+            credentials: 'include',
         })
-        .then((data) => {
-          const validStatus = ['ACTIVE', 'INACTIVE', 'DELETED'].includes(data.status) ? data.status : '';
-          const updatedMember = {
-            ...data,
-            status: validStatus,
-            dob: data.birthDate || '', // birthDate를 dob로 매핑
-            subscription: data.activate || false // activate를 subscription으로 매핑
-          };
-          setMember(updatedMember);
-          console.log("Updated member state:", JSON.stringify(updatedMember, null, 2));
-          setIsLoading(false);
-        })
-        .catch((error) => {
-          console.error("Error fetching member data:", error);
-          setIsLoading(false);
-        });
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then((responseData) => {
+                if (responseData.status === 'success' && responseData.data) {
+                    const memberData = responseData.data;
+                    setMember({
+                        id: memberData.id,
+                        name: memberData.name || '',
+                        email: memberData.email || '',
+                        phone: memberData.phone || '',
+                        address: memberData.address || '',
+                        birthDate: memberData.birthDate || '',
+                        gender: memberData.gender || '',
+                        activate: memberData.activate || false,
+                        role: memberData.role || ''
+                    });
+                    console.log("Updated member state:", memberData);
+                }
+                setIsLoading(false);
+            })
+            .catch((error) => {
+                console.error("Error fetching member data:", error);
+                setIsLoading(false);
+            });
     }, [memberId]);
-
-
 
     // 회원 정보 업데이트 요청
     const handleUpdate = () => {
-        fetch(`${API_URL}members/${memberId}`, {
+        const updateData = {
+            name: member.name,
+            email: member.email, // 이메일도 추가
+            phone: member.phone,
+            address: member.address,
+            birthDate: member.birthDate || null,
+            gender: member.gender || null,
+            activate: member.activate
+        };
+
+        fetch(`${API_URL}members/${memberId}/update`, { // 엔드포인트를 '/update'로 변경
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(member),
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'  // 이 부분 추가
+            },
+            credentials: 'include',
+            body: JSON.stringify(updateData)
         })
-            .then((response) => response.json())
-            .then(() => {
-                navigate('/adminpage/members'); // 수정 후 목록으로 이동
-            })
-            .catch((error) => console.error(error));
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => {
+                    throw new Error(text);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                alert('수정이 완료되었습니다.');
+                navigate('/adminpage/members');
+            } else {
+                alert(data.message || '업데이트 실패');
+            }
+        })
+        .catch(error => {
+            console.error('Error updating member:', error);
+            alert('업데이트 중 오류가 발생했습니다.');
+        });
     };
 
     if (isLoading) return <div>Loading...</div>;
@@ -72,7 +106,6 @@ const EditMember = () => {
         <div className="edit-member-container">
             <h3>회원 수정</h3>
             <form className="edit-member-form">
-                {/* 폼 필드들... */}
                 <TextField
                     label="ID"
                     value={member.id || ""}
@@ -94,8 +127,8 @@ const EditMember = () => {
                 <TextField
                     label="생년월일"
                     type="date"
-                    value={member.dob || ""}
-                    onChange={(e) => setMember({ ...member, dob: e.target.value })}
+                    value={member.birthDate || ""}
+                    onChange={(e) => setMember({ ...member, birthDate: e.target.value })}
                     className="edit-member-field"
                     InputLabelProps={{ shrink: true }}
                 />
@@ -116,31 +149,20 @@ const EditMember = () => {
                     onChange={(e) => setMember({ ...member, phone: e.target.value })}
                     className="edit-member-field"
                 />
+                <TextField
+                    label="주소"
+                    value={member.address || ""}
+                    onChange={(e) => setMember({ ...member, address: e.target.value })}
+                    className="edit-member-field"
+                />
                 <FormControl className="edit-member-field">
-                    <InputLabel id="status-label">활성 상태</InputLabel>
+                    <InputLabel>계정 상태</InputLabel>
                     <Select
-                        labelId="status-label"
-                        value={member.status || ''}
-                        onChange={(e) => setMember({ ...member, status: e.target.value })}
-                        label="활성 상태"
+                        value={member.activate ? "활성" : "비활성"}
+                        onChange={(e) => setMember({ ...member, activate: e.target.value === "활성" })}
                     >
-                        <MenuItem value="ACTIVE">활성회원</MenuItem>
-                        <MenuItem value="INACTIVE">휴면회원</MenuItem>
-                        <MenuItem value="DELETED">탈퇴회원</MenuItem>
-                    </Select>
-                </FormControl>
-                <FormControl className="edit-member-field">
-                    <InputLabel id="subscription-label">구독 여부</InputLabel>
-                    <Select
-                        labelId="subscription-label"
-                        value={member.subscription ? "구독중" : "구독안함"}
-                        onChange={(e) =>
-                            setMember({ ...member, subscription: e.target.value === "구독중" })
-                        }
-                        label="구독 여부"
-                    >
-                        <MenuItem value="구독중">구독중</MenuItem>
-                        <MenuItem value="구독안함">구독안함</MenuItem>
+                        <MenuItem value="활성">활성</MenuItem>
+                        <MenuItem value="비활성">비활성</MenuItem>
                     </Select>
                 </FormControl>
                 <div className="edit-member-buttons">

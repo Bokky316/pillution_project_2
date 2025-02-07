@@ -3,6 +3,7 @@ package com.javalab.student.controller;
 import com.javalab.student.config.jwt.TokenProvider;
 import com.javalab.student.dto.LoginFormDto;
 import com.javalab.student.dto.MemberFormDto;
+import com.javalab.student.dto.MemberUpdateDto;
 import com.javalab.student.entity.Member;
 import com.javalab.student.repository.VerificationCodeRepository;
 import com.javalab.student.service.EmailVerificationService;
@@ -171,6 +172,80 @@ public class MemberController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(responseBody);
         }
     }
+
+    /**
+     * 사용자 정보 수정 (비밀번호 제외)
+     * @param id - 사용자 ID
+     * @param memberUpdateDto - 수정할 사용자 정보 (비밀번호 제외)
+     * @return 성공 또는 실패 메시지를 포함한 JSON 응답
+     */
+    @PutMapping("/{id}/update") // 새 엔드포인트 추가
+    public ResponseEntity<Map<String, Object>> updateMemberWithoutPassword(
+            @PathVariable("id") Long id,
+            @Valid @RequestBody MemberUpdateDto memberUpdateDto,
+            HttpServletResponse response) {
+
+        Map<String, Object> responseBody = new HashMap<>();
+        try {
+            // 1. 사용자 정보 DB 업데이트 (비밀번호 제외)
+            memberService.updateMemberWithoutPassword(id, memberUpdateDto);
+
+            // 2. 업데이트된 사용자 정보 조회
+            Member updatedMember = memberService.findById(id);
+            if (updatedMember == null) {
+                responseBody.put("status", "error");
+                responseBody.put("message", "사용자를 찾을 수 없습니다.");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(responseBody);
+            }
+
+            // 3. 새로운 액세스 토큰 생성
+            String newAccessToken = tokenProvider.generateToken(
+                    updatedMember.getEmail(),
+                    Duration.ofMinutes(1) // 액세스 토큰 유효 기간
+            );
+
+            // 4. 새로운 리프레시 토큰 생성
+            String newRefreshToken = tokenProvider.generateRefreshToken(
+                    updatedMember.getEmail(),
+                    Duration.ofDays(7) // 리프레시 토큰 유효 기간
+            );
+
+            // 5. 리프레시 토큰 DB 저장 또는 업데이트
+            refreshTokenService.saveOrUpdateRefreshToken(updatedMember.getEmail(), newRefreshToken, updatedMember.getId());
+
+            // 6. 액세스 토큰을 HttpOnly 쿠키로 설정
+            Cookie accessTokenCookie = new Cookie("accToken", newAccessToken);
+            accessTokenCookie.setHttpOnly(true);
+            accessTokenCookie.setSecure(false); // HTTPS 환경에서 true로 설정
+            accessTokenCookie.setPath("/");
+            response.addCookie(accessTokenCookie);
+
+            // 7. 리프레시 토큰을 HttpOnly 쿠키로 설정
+            Cookie refreshTokenCookie = new Cookie("refToken", newRefreshToken);
+            refreshTokenCookie.setHttpOnly(true);
+            refreshTokenCookie.setSecure(false); // HTTPS 환경에서 true로 설정
+            refreshTokenCookie.setPath("/refresh");
+            response.addCookie(refreshTokenCookie);
+
+            // 8. 사용자 정보와 상태 반환
+            responseBody.put("status", "success");
+            responseBody.put("message", "사용자 정보가 수정되고 JWT가 갱신되었습니다.");
+            responseBody.put("id", updatedMember.getId());
+            responseBody.put("email", updatedMember.getEmail());
+            responseBody.put("name", updatedMember.getName());
+            responseBody.put("roles", updatedMember.getAuthorities());
+            return ResponseEntity.ok(responseBody);
+        } catch (IllegalArgumentException e) {
+            responseBody.put("status", "error");
+            responseBody.put("message", "잘못된 요청: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseBody);
+        } catch (Exception e) {
+            responseBody.put("status", "error");
+            responseBody.put("message", "서버 오류 발생");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(responseBody);
+        }
+    }
+
 
 
     /**

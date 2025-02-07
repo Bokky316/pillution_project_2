@@ -2,6 +2,7 @@ package com.javalab.student.service;
 
 import com.javalab.student.dto.LoginFormDto;
 import com.javalab.student.dto.MemberFormDto;
+import com.javalab.student.dto.MemberUpdateDto;
 import com.javalab.student.entity.Member;
 import com.javalab.student.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
@@ -60,8 +61,25 @@ public class MemberService {
         member.setPhone(memberFormDto.getPhone());
         member.setAddress(memberFormDto.getAddress());
 
-        memberRepository.save(member); // 변경 사항 저장
+        memberRepository.save(member);
     }
+
+    // 비밀번호를 제외한 업데이트 메소드 추가
+    public void updateMemberWithoutPassword(Long id, MemberUpdateDto memberUpdateDto) {
+        Member member = memberRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+
+        member.setName(memberUpdateDto.getName());
+        member.setEmail(memberUpdateDto.getEmail()); // 이메일도 업데이트
+        member.setPhone(memberUpdateDto.getPhone());
+        member.setAddress(memberUpdateDto.getAddress());
+        member.setBirthDate(memberUpdateDto.getBirthDate());
+        member.setGender(memberUpdateDto.getGender());
+        member.setActivate(memberUpdateDto.isActivate()); // 활성화 여부
+
+        memberRepository.save(member);
+    }
+
 
 
     /**
