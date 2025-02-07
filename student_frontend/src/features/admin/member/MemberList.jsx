@@ -22,50 +22,46 @@ const MemberList = () => {
 
     const fetchMembersData = () => {
         const { page, pageSize } = paginationModel;
+        const statusQuery = statusFilter ? `&status=${statusFilter}` : '';
 
-        // 요청 URL을 ProductList와 동일하게 간단하게 만듦
-        fetch(`${API_URL}members?page=${page}&size=${pageSize}&status=${statusFilter}`, {
+        fetch(`${API_URL}members?page=${page}&size=${pageSize}${statusQuery}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem("accToken")}`,  // JWT 토큰을 헤더에 추가
+                'Authorization': `Bearer ${localStorage.getItem("accToken")}`,
             },
-            credentials: 'include', // HttpOnly 쿠키 포함
+            credentials: 'include',
         })
-        .then((response) => response.json())
-        .then((data) => {
-            setMembers(data.data || []);
-            setTotalRows(data.total || 0);
-        })
-        .catch((error) => {
-            console.error('Error fetching data:', error);
-            setSnackbarMessage('회원 정보를 가져오는 데 실패했습니다.');
-            setSnackbarOpen(true);
-        });
+            .then((response) => response.json())
+            .then((data) => {
+                setMembers(data.data || []);
+                setTotalRows(data.total || 0);
+            })
+            .catch((error) => {
+                console.error('Error fetching data:', error);
+                setSnackbarMessage('회원 정보를 가져오는 데 실패했습니다.');
+                setSnackbarOpen(true);
+            });
     };
 
 
     // 검색 기능 실행 함수
     const handleSearch = () => {
-        const token = localStorage.getItem("accToken"); // 또는 쿠키에서 가져오기
+        const token = localStorage.getItem("accToken");
 
-        fetch(`${API_URL}members/search?type=${searchType}&value=${searchInput}`, {
+        fetch(`${API_URL}members/search?type=${searchType}&value=${searchInput}&status=${statusFilter}&page=${paginationModel.page}&size=${paginationModel.pageSize}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` // JWT 토큰 추가
+                'Authorization': `Bearer ${token}`,
             },
-            credentials: 'include' // 쿠키 포함 (필요한 경우)
+            credentials: 'include',
         })
-            .then((response) => {
-                if (response.status === 401) {
-                    throw new Error("접근 권한이 없습니다. 관리자에게 문의하세요.");
-                }
-                return response.json();
-            })
+            .then((response) => response.json())
             .then((data) => {
                 if (data.status === "success") {
                     setMembers(data.data || []);
+                    setTotalRows(data.total || 0);
                 } else {
                     throw new Error(data.message || "검색 결과를 가져오는 데 실패했습니다.");
                 }
@@ -76,6 +72,7 @@ const MemberList = () => {
                 setSnackbarOpen(true);
             });
     };
+
 
 
 
@@ -134,10 +131,13 @@ const MemberList = () => {
                 </div>
 
                 <div className="search-container">
-                    <select className="status-filter" onChange={(e) => setStatusFilter(e.target.value)} value={statusFilter}>
+                    <select
+                        className="status-filter"
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        value={statusFilter}
+                    >
                         <option value="">전체</option>
                         <option value="ACTIVE">활성회원</option>
-                        {/* <option value="INACTIVE">휴먼회원</option> */}
                         <option value="DELETED">탈퇴회원</option>
                     </select>
 

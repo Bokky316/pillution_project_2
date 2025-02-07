@@ -79,7 +79,31 @@ public class MemberService {
 
         memberRepository.save(member);
     }
+    // 조회
+    @Transactional(readOnly = true)
+    public Page<Member> getMembersByActivate(boolean activate, int page, int size) {
+        return memberRepository.findByActivate(activate, PageRequest.of(page, size));
+    }
 
+    // 검색
+    @Transactional(readOnly = true)
+    public Page<Member> findByNameContaining(String name, int page, int size) {
+        return memberRepository.findByNameContaining(name, PageRequest.of(page, size));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Member> findByEmailContaining(String email, int page, int size) {
+        return memberRepository.findByEmailContaining(email, PageRequest.of(page, size));
+    }
+    @Transactional(readOnly = true)
+    public Page<Member> findByNameAndActivate(String name, boolean activate, int page, int size) {
+        return memberRepository.findByNameContainingAndActivate(name, activate, PageRequest.of(page, size));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Member> findByEmailAndActivate(String email, boolean activate, int page, int size) {
+        return memberRepository.findByEmailContainingAndActivate(email, activate, PageRequest.of(page, size));
+    }
 
 
 

@@ -327,11 +327,76 @@ public class MemberController {
     @GetMapping
     public ResponseEntity<Map<String, Object>> getMemberList(
             @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size,
+            @RequestParam(name = "status", required = false) String status) {
+
+        Map<String, Object> response = new HashMap<>();
+        try {
+            Page<Member> memberPage;
+
+            // 상태별로 회원 조회
+            if ("ACTIVE".equalsIgnoreCase(status)) {
+                memberPage = memberService.getMembersByActivate(true, page, size); // activate=1
+            } else if ("DELETED".equalsIgnoreCase(status)) {
+                memberPage = memberService.getMembersByActivate(false, page, size); // activate=0
+            } else {
+                memberPage = memberService.getMemberList(page, size); // 전체 조회
+            }
+
+            response.put("status", "success");
+            response.put("data", memberPage.getContent());
+            response.put("total", memberPage.getTotalElements());
+            response.put("totalPages", memberPage.getTotalPages());
+            response.put("currentPage", memberPage.getNumber());
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("status", "error");
+            response.put("message", "서버 오류 발생");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    /**
+     * 회원 검색 (상태별 검색 포함)
+     * @param type - 검색 유형 (name, email)
+     * @param value - 검색 값
+     * @param status - 회원 상태 (ACTIVE, DELETED)
+     * @return 검색 결과
+     */
+    @GetMapping("/search")
+    public ResponseEntity<Map<String, Object>> searchMembers(
+            @RequestParam(name = "type") String type,
+            @RequestParam(name = "value") String value,
+            @RequestParam(name = "status", required = false) String status,
+            @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "10") int size) {
 
         Map<String, Object> response = new HashMap<>();
         try {
-            Page<Member> memberPage = memberService.getMemberList(page, size);
+            Page<Member> memberPage;
+
+            if ("name".equalsIgnoreCase(type)) {
+                if ("ACTIVE".equalsIgnoreCase(status)) {
+                    memberPage = memberService.findByNameAndActivate(value, true, page, size);
+                } else if ("DELETED".equalsIgnoreCase(status)) {
+                    memberPage = memberService.findByNameAndActivate(value, false, page, size);
+                } else {
+                    memberPage = memberService.findByNameContaining(value, page, size);
+                }
+            } else if ("email".equalsIgnoreCase(type)) {
+                if ("ACTIVE".equalsIgnoreCase(status)) {
+                    memberPage = memberService.findByEmailAndActivate(value, true, page, size);
+                } else if ("DELETED".equalsIgnoreCase(status)) {
+                    memberPage = memberService.findByEmailAndActivate(value, false, page, size);
+                } else {
+                    memberPage = memberService.findByEmailContaining(value, page, size);
+                }
+            } else {
+                response.put("status", "error");
+                response.put("message", "잘못된 검색 유형입니다.");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            }
 
             response.put("status", "success");
             response.put("data", memberPage.getContent());
