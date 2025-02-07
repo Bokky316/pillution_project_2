@@ -62,31 +62,19 @@ const AddProduct = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const token = localStorage.getItem('accessToken');
+        const token = localStorage.getItem('accessToken'); // 토큰 가져오기
 
         const formData = new FormData();
-        for (const key in product) {
-            if (key === 'categoryIds') {
-                // 카테고리 선택을 위한 처리
-                formData.append('categoryIds', JSON.stringify(product.categoryIds));
-            } else {
-                formData.append(key, product[key]);
-            }
-        }
-
+        formData.append('product', JSON.stringify(product));
         if (images.mainImage) {
             formData.append('mainImage', images.mainImage);
-        }
-
-        for (let ingredient of ingredients) {
-            formData.append('ingredientIds', ingredient);
         }
 
         try {
             const response = await fetch(`${API_URL}products`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': token ? `Bearer ${token}` : '',
+                    'Authorization': token ? `Bearer ${token}` : '', // 토큰 추가
                 },
                 body: formData,
             });

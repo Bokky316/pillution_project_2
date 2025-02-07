@@ -2,12 +2,13 @@ package com.javalab.student.service;
 
 import com.javalab.student.dto.*;
 import com.javalab.student.entity.Product;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
 public interface ProductService {
 
-    ProductDto createProduct(ProductFormDto productFormDto);
+    ProductDto createProduct(ProductFormDto productFormDto, MultipartFile mainImage);
 
     ProductDto updateProduct(Long id, ProductFormDto productFormDto);
 

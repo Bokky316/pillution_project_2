@@ -7,12 +7,14 @@ import com.javalab.student.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -52,17 +54,16 @@ public class ProductController {
     /**
      * 상품 등록
      */
-    @PostMapping
-    public ResponseEntity<ProductDto> createProduct(@RequestBody @Valid ProductFormDto productFormDto) {
-        log.info("상품 등록 요청 수신: {}", productFormDto);
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ProductDto> createProduct(
+            @RequestPart("product") @Valid ProductFormDto productFormDto,
+            @RequestPart("mainImage") MultipartFile mainImage) {
 
         try {
-            ProductDto savedProduct = productService.createProduct(productFormDto);
-            log.info("상품 등록 성공: {}", savedProduct);
+            ProductDto savedProduct = productService.createProduct(productFormDto, mainImage);
             return ResponseEntity.ok(savedProduct);
         } catch (Exception e) {
-            log.error("상품 등록 중 오류 발생: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 

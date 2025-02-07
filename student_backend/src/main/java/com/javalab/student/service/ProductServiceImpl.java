@@ -11,8 +11,15 @@ import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -25,6 +32,7 @@ public class ProductServiceImpl implements ProductService {
     private final ProductCategoryRepository categoryRepository;
     private final ProductIngredientRepository ingredientRepository;
     private final ModelMapper modelMapper;
+    private final String uploadDir = "/path/to/upload/directory"; // 실제 이미지 저장 경로
 
     public ProductServiceImpl(ProductRepository productRepository, ProductCategoryRepository categoryRepository, ProductIngredientRepository ingredientRepository, ModelMapper modelMapper) {
         this.productRepository = productRepository;
@@ -37,21 +45,45 @@ public class ProductServiceImpl implements ProductService {
      * 새로운 상품을 생성하고 저장합니다.
      */
     @Override
-    public ProductDto createProduct(ProductFormDto productFormDto) {
-        // DTO → Entity 변환
+    public ProductDto createProduct(ProductFormDto productFormDto, MultipartFile mainImage) {
+        // 1. 이미지 업로드 처리
+        String imageUrl = uploadImage(mainImage);
+        productFormDto.setMainImageUrl(imageUrl);
+
+        // 2. DTO → Entity 변환
         Product product = modelMapper.map(productFormDto, Product.class);
 
-        // 영양 성분 추가
+        // 3. 카테고리 및 영양 성분 매핑
+        List<ProductCategory> categories = categoryRepository.findAllById(productFormDto.getCategoryIds());
         List<ProductIngredient> ingredients = ingredientRepository.findAllById(productFormDto.getIngredientIds());
+        product.setCategories(categories);
         product.setIngredients(ingredients);
 
-        // 카테고리 추가
-        List<ProductCategory> categories = categoryRepository.findAllById(productFormDto.getCategoryIds());
-        product.setCategories(categories);
-
-        // 저장 후 DTO 변환
+        // 4. 저장 후 DTO 반환
         Product savedProduct = productRepository.save(product);
         return modelMapper.map(savedProduct, ProductDto.class);
+    }
+
+    private String uploadImage(MultipartFile image) {
+        if (image == null || image.isEmpty()) {
+            throw new IllegalArgumentException("이미지가 비어 있습니다.");
+        }
+
+        try {
+            // 고유 파일 이름 생성
+            String originalFilename = StringUtils.cleanPath(image.getOriginalFilename());
+            String fileName = UUID.randomUUID() + "_" + originalFilename;
+
+            // 파일 저장 경로 설정
+            Path filePath = Paths.get(uploadDir, fileName);
+            Files.createDirectories(filePath.getParent()); // 디렉토리가 없으면 생성
+            Files.copy(image.getInputStream(), filePath);
+
+            // 저장된 파일의 URL 반환 (예: "/uploads/{fileName}")
+            return "/uploads/" + fileName;
+        } catch (IOException e) {
+            throw new RuntimeException("이미지 저장 중 오류 발생", e);
+        }
     }
 
     /**
@@ -140,5 +172,9 @@ public class ProductServiceImpl implements ProductService {
                 .map(ProductResponseDTO::fromEntity)
                 .collect(Collectors.toList());
     }
+
+
+
+
 
 }
