@@ -24,4 +24,7 @@ public interface ProductService {
     List<ProductResponseDTO> getProductsByCategoryAndIngredient(Long categoryId, Long ingredientId);
 
     List<ProductResponseDTO> getProductsByCategory(Long categoryId);
+
+    PageResponseDTO<ProductDto> searchProducts(String field, String query, PageRequestDTO pageRequestDTO);
+
 }

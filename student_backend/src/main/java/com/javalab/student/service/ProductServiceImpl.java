@@ -183,7 +183,37 @@ public class ProductServiceImpl implements ProductService {
     }
 
 
+    @Override
+    public PageResponseDTO<ProductDto> searchProducts(String field, String query, PageRequestDTO pageRequestDTO) {
+        Pageable pageable = pageRequestDTO.getPageable("id");
+        Page<Product> result;
+        if ("상품명".equals(field)) {
+            result = productRepository.findByNameContainingIgnoreCase(query, pageable);
+        } else if ("카테고리".equals(field)) {
+            result = productRepository.findByCategoryNameContainingIgnoreCase(query, pageable);
+        } else if ("영양성분".equals(field)) {
+            result = productRepository.findByIngredientNameContainingIgnoreCase(query, pageable);
+        } else {
+            result = productRepository.findAll(pageable);
+        }
 
+        List<ProductDto> dtoList = result.getContent().stream().map(product -> {
+            ProductDto productDto = modelMapper.map(product, ProductDto.class);
+            // 카테고리 등의 필요 필드 매핑(이미 기존 코드와 동일)
+            if (product.getCategories() != null) {
+                productDto.setCategories(product.getCategories().stream()
+                        .map(cat -> modelMapper.map(cat, ProductCategoryDto.class))
+                        .collect(Collectors.toList()));
+            }
+            return productDto;
+        }).collect(Collectors.toList());
+
+        return PageResponseDTO.<ProductDto>builder()
+                .dtoList(dtoList)
+                .total((int) result.getTotalElements())
+                .pageRequestDTO(pageRequestDTO)
+                .build();
+    }
 
 
 }

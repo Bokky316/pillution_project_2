@@ -53,4 +53,14 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     @Query("SELECT DISTINCT p FROM Product p LEFT JOIN FETCH p.categories")
     Page<Product> findAllWithCategories(Pageable pageable);
+
+    @Query("SELECT DISTINCT p FROM Product p WHERE lower(p.name) LIKE lower(concat('%', :query, '%'))")
+    Page<Product> findByNameContainingIgnoreCase(@Param("query") String query, Pageable pageable);
+
+    @Query("SELECT DISTINCT p FROM Product p JOIN p.categories c WHERE lower(c.name) LIKE lower(concat('%', :query, '%'))")
+    Page<Product> findByCategoryNameContainingIgnoreCase(@Param("query") String query, Pageable pageable);
+
+    @Query("SELECT DISTINCT p FROM Product p JOIN p.ingredients i WHERE lower(i.ingredientName) LIKE lower(concat('%', :query, '%'))")
+    Page<Product> findByIngredientNameContainingIgnoreCase(@Param("query") String query, Pageable pageable);
+
 }

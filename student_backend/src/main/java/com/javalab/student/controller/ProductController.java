@@ -37,19 +37,22 @@ public class ProductController {
      * 특정 상품 상세 정보 조회
      */
     @GetMapping("/{productId}")
-    public ResponseEntity<Product> getProductDetails(@PathVariable Long productId) {
+    public ResponseEntity<?> getProductDetails(@PathVariable Long productId) {
+        log.info("Fetching product details for id: {}", productId);
         try {
-            return productRepository.findById(productId)
-                    .map(ResponseEntity::ok)
-                    .orElse(ResponseEntity.notFound().build());
-        } catch (DataAccessException e) {
-            log.error("Database error occurred while fetching product with id: " + productId, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            ProductDto productDto = productService.getProductById(productId);
+            log.info("Product found: {}", productDto);
+            return ResponseEntity.ok(productDto);
+        } catch (RuntimeException e) {
+            log.warn("Product not found for id: {}", productId);
+            return ResponseEntity.notFound().build();
         } catch (Exception e) {
-            log.error("Unexpected error occurred while fetching product with id: " + productId, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            log.error("Error occurred while fetching product with id: " + productId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error: " + e.getMessage());
         }
     }
+
 
     /**
      * 상품 등록
@@ -104,12 +107,29 @@ public class ProductController {
 
     @GetMapping("/filter")
     public ResponseEntity<List<ProductResponseDTO>> filterProducts(
-            @RequestParam(required = false) Long categoryId,
-            @RequestParam(required = false) Long ingredientId) {
+            @RequestParam(value = "categoryId", required = false) Long categoryId,
+            @RequestParam(value = "ingredientId", required = false) Long ingredientId) {
 
         List<ProductResponseDTO> filteredProducts = productService.getProductsByCategoryAndIngredient(categoryId, ingredientId);
         return ResponseEntity.ok(filteredProducts);
     }
+
+
+    @GetMapping("/search")
+    public ResponseEntity<PageResponseDTO<ProductDto>> searchProducts(
+            @RequestParam("field") String field,
+            @RequestParam("query") String query,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size) {
+
+        PageRequestDTO pageRequestDTO = PageRequestDTO.builder()
+                .page(page)
+                .size(size)
+                .build();
+        PageResponseDTO<ProductDto> response = productService.searchProducts(field, query, pageRequestDTO);
+        return ResponseEntity.ok(response);
+    }
+
 
 }
 
