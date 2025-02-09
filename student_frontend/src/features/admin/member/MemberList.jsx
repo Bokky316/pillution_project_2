@@ -175,7 +175,7 @@ const MemberList = () => {
                     message={snackbarMessage}
                 />
             </div>
-        );
+    );
 };
 
 export default MemberList;

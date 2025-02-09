@@ -109,8 +109,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/survey/**").permitAll()
                 .requestMatchers("/api/recommendations/**").authenticated()
                 .requestMatchers("/members/login").permitAll()
-                .requestMatchers("/api/product/**").permitAll()
+                .requestMatchers("/api/products/**").permitAll()
                 .requestMatchers("/api/categories").permitAll()
+                .requestMatchers("/api/upload").permitAll()
 
                 // 관리자 전용 엔드포인트
                 .requestMatchers("/admin/**").hasRole("ADMIN")

@@ -45,6 +45,9 @@ public class Product {
     @Column(nullable = false)
     private boolean active;
 
+    @Column(name = "main_image_url")
+    private String mainImageUrl;
+
     /** 대표 이미지 경로 */
 //    private String imgPath;
 //

@@ -37,7 +37,7 @@ public class ProductController {
      * 특정 상품 상세 정보 조회
      */
     @GetMapping("/{productId}")
-    public ResponseEntity<?> getProductDetails(@PathVariable Long productId) {
+    public ResponseEntity<?> getProductDetails(@PathVariable("productId") Long productId) {
         log.info("Fetching product details for id: {}", productId);
         try {
             ProductDto productDto = productService.getProductById(productId);
@@ -114,7 +114,9 @@ public class ProductController {
         return ResponseEntity.ok(filteredProducts);
     }
 
-
+    /**
+     * 상품 검색
+     */
     @GetMapping("/search")
     public ResponseEntity<PageResponseDTO<ProductDto>> searchProducts(
             @RequestParam("field") String field,

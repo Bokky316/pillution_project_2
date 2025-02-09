@@ -1,44 +1,88 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TextField, Button, Select, MenuItem, FormControl, InputLabel, Box } from '@mui/material';
-import { API_URL } from "../../../constant";
-import { useNavigate } from "react-router-dom";
+import { API_URL } from '../../../constant';
+import { useNavigate } from 'react-router-dom';
 import './AddProduct.css';
 
 const AddProduct = () => {
     const [product, setProduct] = useState({
         categoryIds: [],
+        ingredientIds: [],
         name: '',
         price: '',
         stock: '',
         description: '',
         active: true,
     });
+
     const [images, setImages] = useState({
         mainImage: null,
     });
     const [imagePreviews, setImagePreviews] = useState({
         mainImage: null,
     });
-    const [ingredients, setIngredients] = useState([]);  // 영양 성분 선택
     const navigate = useNavigate();
 
-    const categories = ['의류', '전자기기', '식품', '가구', '도서'];
-    const availableIngredients = ['성분1', '성분2', '성분3'];  // 영양 성분 리스트 예시
+    // 카테고리 목록을 저장할 state
+    const [categories, setCategories] = useState([]);
+
+    useEffect(() => {
+        // 컴포넌트가 마운트될 때 카테고리 목록을 가져옴
+        fetchCategories();
+    }, []);
+
+    const fetchCategories = async () => {
+        try {
+            const token = localStorage.getItem('accessToken');
+            const response = await fetch(`${API_URL}categories`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token ? `Bearer ${token}` : '',
+                },
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            setCategories(data);
+        } else {
+            throw new Error('카테고리 목록을 불러오는 데 실패했습니다.');
+        }
+        } catch (error) {
+            console.error('카테고리 목록을 불러오는 중 오류가 발생했습니다.', error);
+            alert(error.message);
+        }
+    };
+
+    const availableIngredients = [
+        { id: 1, name: '성분1' },
+        { id: 2, name: '성분2' },
+        { id: 3, name: '성분3' }
+    ];
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setProduct({
-            ...product,
-            [name]: name === 'price' || name === 'stock' ? Number(value) : value,
-        });
+        setProduct(prev => ({
+        ...prev,
+        [name]: (name === 'price' || name === 'stock') ? Number(value) : value,
+        }));
     };
 
     const handleCategoryChange = (e) => {
         const { value } = e.target;
-        setProduct({
-            ...product,
-            categoryIds: value, // 카테고리 IDs로 업데이트
-        });
+        setProduct(prev => ({
+            ...prev,
+            categoryIds: value
+        }));
+    };
+
+    const handleIngredientChange = (e) => {
+        const { value } = e.target;
+        setProduct(prev => ({
+            ...prev,
+            ingredientIds: value
+        }));
     };
 
     const handleImageChange = (e) => {
@@ -55,17 +99,12 @@ const AddProduct = () => {
         }
     };
 
-    const handleIngredientChange = (e) => {
-        const { value } = e.target;
-        setIngredients(value);
-    };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const token = localStorage.getItem('accessToken'); // 토큰 가져오기
+        const token = localStorage.getItem('accessToken');
 
         const formData = new FormData();
-        formData.append('product', JSON.stringify(product));
+        formData.append('product', new Blob([JSON.stringify(product)], { type: "application/json" }));
         if (images.mainImage) {
             formData.append('mainImage', images.mainImage);
         }
@@ -74,7 +113,7 @@ const AddProduct = () => {
             const response = await fetch(`${API_URL}products`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': token ? `Bearer ${token}` : '', // 토큰 추가
+                    'Authorization': token ? `Bearer ${token}` : '',
                 },
                 body: formData,
             });
@@ -85,7 +124,7 @@ const AddProduct = () => {
             } else {
                 throw new Error('상품 추가에 실패했습니다.');
             }
-        } catch (error) {
+            } catch (error) {
             console.error('Error:', error);
             alert(error.message);
         }
@@ -104,9 +143,8 @@ const AddProduct = () => {
                         multiple
                         required
                     >
-                        <MenuItem value="" disabled>카테고리를 선택하세요</MenuItem>
-                        {categories.map((category, index) => (
-                            <MenuItem key={index} value={category}>{category}</MenuItem>
+                        {categories.map(cat => (
+                            <MenuItem key={cat.id} value={cat.id}>{cat.name}</MenuItem>
                         ))}
                     </Select>
                 </FormControl>
@@ -152,34 +190,23 @@ const AddProduct = () => {
                 />
                 <Box sx={{ mt: 2 }}>
                     <InputLabel sx={{ mb: 1 }}>상품 이미지</InputLabel>
-                    <input
-                        className="file-input"
-                        type="file"
-                        name="mainImage"
-                        onChange={handleImageChange}
-                        accept="image/*"
-                    />
-                    {imagePreviews.mainImage && (
-                        <img className="image-preview" src={imagePreviews.mainImage} alt="Preview" />
-                    )}
+                    <div className="image-upload-container">
+                        <div className="image-upload-box">
+                            <input
+                                className="file-input"
+                                type="file"
+                                name="mainImage"
+                                onChange={handleImageChange}
+                                accept="image/*"
+                            />
+                            {imagePreviews.mainImage ? (
+                                <img className="image-preview" src={imagePreviews.mainImage} alt="Preview" />
+                            ) : (
+                                <span>상품 이미지 선택</span>
+                            )}
+                        </div>
+                    </div>
                 </Box>
-
-                <FormControl fullWidth margin="normal">
-                    <InputLabel>영양 성분</InputLabel>
-                    <Select
-                        multiple
-                        value={ingredients}
-                        onChange={handleIngredientChange}
-                        name="ingredients"
-                    >
-                        {availableIngredients.map((ingredient, index) => (
-                            <MenuItem key={index} value={ingredient}>
-                                {ingredient}
-                            </MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
-
                 <FormControl fullWidth margin="normal" variant="outlined">
                     <InputLabel shrink htmlFor="active-select">상품 활성화</InputLabel>
                     <Select
@@ -193,7 +220,6 @@ const AddProduct = () => {
                         <MenuItem value={false}>비활성화</MenuItem>
                     </Select>
                 </FormControl>
-
                 <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between' }}>
                     <Button type="submit" variant="contained" color="primary">저장</Button>
                     <Button variant="outlined" color="secondary" onClick={() => navigate('/adminpage/products')}>취소</Button>

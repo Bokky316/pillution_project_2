@@ -81,8 +81,8 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
         }
         log.info("Redis에서 조회한 권한 정보: {}", roles);
 
-        Authentication auth = createAuthentication(email, roles);
-        SecurityContextHolder.getContext().setAuthentication(auth);
+        Authentication auth = createAuthentication(email, roles);   // 인증 객체 생성
+        SecurityContextHolder.getContext().setAuthentication(auth); // 인증 객체를 SecurityContext에 저장 -> SecurityConfig의 인가권한 검증에 사용됨.
 
         filterChain.doFilter(request, response);
     }

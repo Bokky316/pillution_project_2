@@ -8,6 +8,7 @@ import com.javalab.student.repository.ProductCategoryRepository;
 import com.javalab.student.repository.ProductIngredientRepository;
 import com.javalab.student.repository.ProductRepository;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -33,6 +35,10 @@ public class ProductServiceImpl implements ProductService {
     private final ProductIngredientRepository ingredientRepository;
     private final ModelMapper modelMapper;
     private final String uploadDir = "/path/to/upload/directory"; // 실제 이미지 저장 경로
+
+    @Autowired
+    private ProductCategoryRepository productCategoryRepository;
+
 
     public ProductServiceImpl(ProductRepository productRepository, ProductCategoryRepository categoryRepository, ProductIngredientRepository ingredientRepository, ModelMapper modelMapper) {
         this.productRepository = productRepository;
@@ -90,14 +96,50 @@ public class ProductServiceImpl implements ProductService {
      * 기존 상품 정보를 업데이트합니다.
      */
     @Override
-    public ProductDto updateProduct(Long id, ProductFormDto productFormDto) {
-        Product existingProduct = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
+    public ProductDto updateProduct(Long id, ProductFormDto formDto) {
+        // 기존 상품 조회
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("상품을 찾을 수 없습니다."));
 
-        modelMapper.map(productFormDto, existingProduct);
-        Product updatedProduct = productRepository.save(existingProduct);
-        return modelMapper.map(updatedProduct, ProductDto.class);
+        // 기본 필드 업데이트
+        product.setName(formDto.getName());
+        product.setDescription(formDto.getDescription());
+        product.setPrice(formDto.getPrice());
+        product.setStock(formDto.getStock());
+        product.setActive(formDto.isActive());
+        product.setMainImageUrl(formDto.getMainImageUrl());
+
+        // 카테고리 업데이트 처리
+        if (formDto.getCategoryIds() != null && !formDto.getCategoryIds().isEmpty()) {
+            List<ProductCategory> updatedCategories = productCategoryRepository.findAllById(formDto.getCategoryIds());
+            product.setCategories(updatedCategories);
+        } else {
+            product.setCategories(Collections.emptyList());
+        }
+
+        // 기타(예: 영양 성분 등)의 업데이트도 필요하면 동일하게 처리
+
+        productRepository.save(product);
+        return convertToProductDto(product); // product를 ProductDto로 변환하는 메서드
     }
+
+    private ProductDto convertToProductDto(Product product) {
+        return ProductDto.builder()
+                .id(product.getId())
+                .name(product.getName())
+                .description(product.getDescription())
+                .price(product.getPrice())
+                .stock(product.getStock())
+                .active(product.isActive())
+                .mainImageUrl(product.getMainImageUrl())
+                .categories(
+                        product.getCategories().stream()
+                                .map(cat -> new ProductCategoryDto(cat.getId(), cat.getName()))
+                                .collect(Collectors.toList())
+                )
+                .build();
+    }
+
 
     /**
      * 특정 상품 정보를 조회합니다.
