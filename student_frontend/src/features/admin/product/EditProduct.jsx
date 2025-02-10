@@ -19,7 +19,6 @@ const EditProduct = () => {
     const { productId } = useParams();
     const navigate = useNavigate();
 
-    // 모든 필드를 하나의 state로 관리
     const [product, setProduct] = useState({
         name: '',
         description: '',
@@ -29,9 +28,10 @@ const EditProduct = () => {
         mainImageUrl: '',
     });
 
-    const [imageFile, setImageFile] = useState(null); // 이미지 파일 state
+    const [imageFile, setImageFile] = useState(null);
+    const [imagePreviewUrl, setImagePreviewUrl] = useState(''); // 이미지 미리보기 URL
     const [categories, setCategories] = useState([]);
-    const [selectedCategoryIds, setSelectedCategoryIds] = useState([]); // 선택된 카테고리 ID들
+    const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -51,9 +51,6 @@ const EditProduct = () => {
                 const categoriesData = await categoriesResponse.json();
                 const productData = await productResponse.json();
 
-                console.log('카테고리 데이터:', categoriesData);
-                console.log('상품 데이터:', productData);
-
                 setCategories(categoriesData);
                 setProduct({
                     name: productData.name || '',
@@ -63,8 +60,12 @@ const EditProduct = () => {
                     active: productData.active,
                     mainImageUrl: productData.mainImageUrl || '',
                 });
-                // 상품에 연결된 카테고리 ID 설정
                 setSelectedCategoryIds(productData.categories.map(cat => cat.id));
+
+                // 이미지 미리보기 URL 설정
+                if (productData.mainImageUrl) {
+                    setImagePreviewUrl(productData.mainImageUrl);
+                }
 
             } catch (error) {
                 console.error("Error fetching data:", error);
@@ -77,30 +78,40 @@ const EditProduct = () => {
         fetchData();
     }, [productId]);
 
-    // 일반적인 input 변경 처리
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setProduct(prev => ({ ...prev, [name]: value }));
     };
 
-    // Checkbox 변경 처리
     const handleCheckboxChange = (e) => {
         const { name, checked } = e.target;
         setProduct(prev => ({ ...prev, [name]: checked }));
     };
 
-    // 이미지 파일 선택 시 호출
     const handleImageChange = (e) => {
         const file = e.target.files[0];
-        setImageFile(file); // 파일 state 업데이트
+        setImageFile(file);
+
+        // 이미지 미리보기
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreviewUrl(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
     };
 
-    // 카테고리 변경 시 호출
+    const handleImageDelete = () => {
+        setImageFile(null);
+        setImagePreviewUrl('');
+        setProduct(prev => ({ ...prev, mainImageUrl: '' })); // mainImageUrl을 빈 문자열로 설정
+    };
+
     const handleCategoryChange = (e) => {
         setSelectedCategoryIds(e.target.value);
     };
 
-    // 이미지 업로드 API 호출
     const uploadImage = async () => {
         if (!imageFile) return null;
 
@@ -111,7 +122,7 @@ const EditProduct = () => {
             const response = await axios.post(`${API_URL}upload`, formData, {
                 headers: { "Content-Type": "multipart/form-data" }
             });
-            return response.data.imageUrl; // 업로드된 이미지 URL 반환
+            return response.data.imageUrl;
         } catch (error) {
             console.error("이미지 업로드 실패:", error);
             alert("이미지 업로드에 실패했습니다.");
@@ -119,25 +130,26 @@ const EditProduct = () => {
         }
     };
 
+
+
     const handleSubmit = async (event) => {
         event.preventDefault();
 
-        let uploadedImageUrl = product.mainImageUrl; // 기존 이미지 URL 유지
+        // 만약 imageFile이 없고, 이미 사용자가 이미지 삭제 버튼을 눌렀다면
+        let uploadedImageUrl = product.mainImageUrl; // 빈 문자열로 삭제된 경우 반영
+
         if (imageFile) {
-            // 새 이미지가 선택된 경우에만 업로드
             uploadedImageUrl = await uploadImage();
             if (!uploadedImageUrl) {
-                return; // 이미지 업로드 실패 시 중단
+                return;
             }
         }
 
         const updateData = {
-            ...product, // 기존 product 데이터 복사
-            mainImageUrl: uploadedImageUrl, // 업로드된 이미지 URL 설정
-            categoryIds: selectedCategoryIds // 선택된 카테고리 ID 리스트
+            ...product,
+            mainImageUrl: uploadedImageUrl, // 삭제된 경우 빈 문자열을 전송
+            categoryIds: selectedCategoryIds
         };
-
-        console.log("백엔드로 보낼 updateData:", updateData);
 
         try {
             await axios.put(`${API_URL}products/${productId}`, updateData, {
@@ -199,14 +211,24 @@ const EditProduct = () => {
                     </Select>
                 </FormControl>
 
-                <TextField
-                    fullWidth
-                    margin="normal"
-                    type="file"
-                    name="mainImageUrl"
-                    onChange={handleImageChange}
-                    InputLabelProps={{ shrink: true }}
-                />
+                {/* 이미지 미리보기 및 삭제 */}
+                <Box margin="normal">
+                    {imagePreviewUrl ? (
+                        <Box>
+                            <img src={imagePreviewUrl} alt="상품 이미지 미리보기" style={{ width: '100%', height: 'auto', maxHeight: '300px', objectFit: 'cover' }} />
+                            <Button variant="outlined" color="secondary" onClick={handleImageDelete} sx={{ mt: 2 }}>이미지 삭제</Button>
+                        </Box>
+                    ) : (
+                        <TextField
+                            fullWidth
+                            margin="normal"
+                            type="file"
+                            name="mainImageUrl"
+                            onChange={handleImageChange}
+                            InputLabelProps={{ shrink: true }}
+                        />
+                    )}
+                </Box>
 
                 <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between' }}>
                     <Button type="submit" variant="contained" color="primary" sx={{ width: '48%' }}>저장</Button>

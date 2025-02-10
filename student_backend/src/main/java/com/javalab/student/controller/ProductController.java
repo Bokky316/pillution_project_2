@@ -100,6 +100,7 @@ public class ProductController {
      * 상품 활성/비활성
      */
     @PatchMapping("/{id}/toggle-active")
+    @CrossOrigin(origins = "http://localhost:3000")
     public ResponseEntity<Void> toggleProductActive(@PathVariable("id") Long id) {
         productService.toggleProductActive(id);
         return ResponseEntity.ok().build();
@@ -121,6 +122,7 @@ public class ProductController {
     public ResponseEntity<PageResponseDTO<ProductDto>> searchProducts(
             @RequestParam("field") String field,
             @RequestParam("query") String query,
+            @RequestParam(name = "categoryId", required = false) Long categoryId,
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "20") int size) {
 

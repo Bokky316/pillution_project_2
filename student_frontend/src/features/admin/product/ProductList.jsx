@@ -64,62 +64,119 @@ const ProductList = () => {
     }, [paginationModel, filterType, selectedCategory, appliedSearchText, appliedSearchField]);
 
     const fetchProductsData = () => {
-        const { page, pageSize } = paginationModel;
-        let url = `${API_URL}products?page=${page}&size=${pageSize}`;
+            const { page, pageSize } = paginationModel;
 
-        if (appliedSearchText.trim() !== '') {
-            url = `${API_URL}products/search?page=${page}&size=${pageSize}&field=${encodeURIComponent(appliedSearchField)}&query=${encodeURIComponent(appliedSearchText)}`;
-        } else if (filterType === '카테고리' && selectedCategory) {
-            url = `${API_URL}products/filter?page=${page}&size=${pageSize}&categoryId=${selectedCategory}`;
-        }
+            // 기본 전체 상품 조회 URL
+            let url = `${API_URL}products?page=${page}&size=${pageSize}`;
 
-        fetch(url, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': token ? `Bearer ${token}` : ''
-            },
-            credentials: 'include'
-        })
-            .then(response => {
+            // 검색어가 있는 경우
+            if (appliedSearchText.trim() !== '') {
+                url = `${API_URL}products/search?page=${page}&size=${pageSize}&field=${encodeURIComponent(appliedSearchField)}&query=${encodeURIComponent(appliedSearchText)}`;
+            }
+            // 카테고리 필터링만 있는 경우
+            else if (filterType === '카테고리' && selectedCategory) {
+                url = `${API_URL}products/filter?categoryId=${selectedCategory}`;
+            }
+
+            fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token ? `Bearer ${token}` : ''
+                },
+                credentials: 'include'
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Error: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Received product data:', data);
+
+                    // filter API와 search API의 응답 구조가 다르므로 분기 처리
+                    if (url.includes('/filter')) {
+                        // filter API 응답 처리
+                        setProducts(data);
+                        setTotalRows(data.length);
+                    } else {
+                        // search API 또는 기본 목록 응답 처리
+                        const productList = data.dtoList || data;
+                        setProducts(productList);
+                        setTotalRows(data.total || productList.length);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                    setSnackbarMessage('상품 정보를 가져오는 데 실패했습니다.');
+                    setSnackbarOpen(true);
+                });
+        };
+
+        const toggleProductStatus = async (id, currentActive) => {
+            try {
+                const response = await fetch(`${API_URL}products/${id}/toggle-active`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': token ? `Bearer ${token}` : ''
+                    },
+                    credentials: 'include'
+                });
+
                 if (!response.ok) {
-                    throw new Error(`Error: ${response.statusText}`);
+                    throw new Error('상태 변경 실패');
                 }
-                return response.json();
-            })
-            .then(data => {
-                console.log('Received product data:', data);
-                setProducts(data.dtoList || data);
-                setTotalRows(data.total || (data.dtoList ? data.dtoList.length : data.length) || 0);
-            })
-            .catch(error => {
-                console.error('Error fetching data:', error);
-                setSnackbarMessage('상품 정보를 가져오는 데 실패했습니다.');
-                setSnackbarOpen(true);
-            });
-    };
 
-    const toggleProductStatus = (id, currentActive) => {
-        fetch(`${API_URL}products/${id}/toggle-active`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': token ? `Bearer ${token}` : ''
-            },
-            credentials: 'include'
-        })
-            .then(() => fetchProductsData())
-            .catch((error) => {
+                // boolean 값을 토글
+                setProducts(prevProducts =>
+                    prevProducts.map(product =>
+                        product.id === id
+                            ? { ...product, active: !currentActive }
+                            : product
+                    )
+                );
+
+                setSnackbarMessage('상품 상태가 변경되었습니다.');
+                setSnackbarOpen(true);
+
+            } catch (error) {
                 console.error('Error toggling product status:', error);
                 setSnackbarMessage('제품 상태 변경에 실패했습니다.');
                 setSnackbarOpen(true);
-            });
+            }
+        };
+
+// 필터 타입 변경 시 처리
+    const handleFilterTypeChange = (newFilterType) => {
+        setFilterType(newFilterType);
+        setSelectedCategory('');
+        setSearchText('');
+        setAppliedSearchText('');
+        // 필터 타입이 변경되면 검색 조건 초기화
+        setPaginationModel({ page: 0, pageSize: 10 });
     };
 
-    // 검색 버튼 클릭 시 상태 갱신
+    // 카테고리 선택 시 처리
+    const handleCategoryChange = (newCategory) => {
+        setSelectedCategory(newCategory);
+        // 카테고리가 선택되면 검색 조건 초기화
+        setSearchText('');
+        setAppliedSearchText('');
+        setPaginationModel({ page: 0, pageSize: 10 });
+    };
+
+    // 검색 버튼 클릭 시 처리
     const handleSearchClick = () => {
+        if (searchText.trim() !== '') {
+            // 검색 시 카테고리 필터 초기화
+            setFilterType('전체');
+            setSelectedCategory('');
+        }
         setAppliedSearchText(searchText);
         setAppliedSearchField(searchField);
+        setPaginationModel({ page: 0, pageSize: 10 });
     };
 
     // 여기는 상품명을 클릭했을 때 모달을 여는 함수입니다.
@@ -162,20 +219,25 @@ const ProductList = () => {
             )
         },
         {
-            field: 'manage',
-            headerName: '관리',
-            flex: 1,
-            renderCell: (params) => (
-                <Button
-                    variant="contained"
-                    color={params.row.active === 1 ? "primary" : "secondary"}
-                    onClick={() => toggleProductStatus(params.row.id, params.row.active)}
-                >
-                    {params.row.active === 1 ? '비활성화' : '활성화'}
-                </Button>
-            )
-        }
-    ];
+                    field: 'manage',
+                                headerName: '관리',
+                                flex: 1,
+                                renderCell: (params) => {
+                                    // boolean 타입으로 처리
+                                    const isActive = params.row.active;
+                                    return (
+                                        <Button
+                                            variant="contained"
+                                            color={isActive ? "primary" : "secondary"}
+                                            onClick={() => toggleProductStatus(params.row.id, params.row.active)}
+                                        >
+                                            {isActive ? '비활성화하기' : '활성화하기'}
+                                        </Button>
+                                    );
+                                }
+                            }
+                        ];
+
 
     return (
         <div style={{ width: '100%' }}>

@@ -14,11 +14,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -54,7 +56,7 @@ public class ProductServiceImpl implements ProductService {
     public ProductDto createProduct(ProductFormDto productFormDto, MultipartFile mainImage) {
         // 1. 이미지 업로드 처리
         String imageUrl = uploadImage(mainImage);
-        productFormDto.setMainImageUrl(imageUrl);
+        productFormDto.setMainImageUrl(imageUrl); // productFormDto에 이미지 URL 설정
 
         // 2. DTO → Entity 변환
         Product product = modelMapper.map(productFormDto, Product.class);
@@ -70,27 +72,37 @@ public class ProductServiceImpl implements ProductService {
         return modelMapper.map(savedProduct, ProductDto.class);
     }
 
+    @Value("${uploadPath}")
+    private String uploadPathConfig;
+
     private String uploadImage(MultipartFile image) {
         if (image == null || image.isEmpty()) {
             throw new IllegalArgumentException("이미지가 비어 있습니다.");
         }
-
         try {
-            // 고유 파일 이름 생성
+            // 원본 파일 이름 정리
             String originalFilename = StringUtils.cleanPath(image.getOriginalFilename());
-            String fileName = UUID.randomUUID() + "_" + originalFilename;
+            String fileName = UUID.randomUUID().toString() + "_" + originalFilename;
 
-            // 파일 저장 경로 설정
-            Path filePath = Paths.get(uploadDir, fileName);
-            Files.createDirectories(filePath.getParent()); // 디렉토리가 없으면 생성
-            Files.copy(image.getInputStream(), filePath);
+            // properties에 설정된 uploadPath 사용
+            String processedPath = uploadPathConfig.replace("file://", "");
+            // Windows의 경우 "/c:/shop/"와 같이 앞에 붙은 불필요한 슬래시 제거
+            if (processedPath.startsWith("/") && processedPath.charAt(2) == ':') {
+                processedPath = processedPath.substring(1);
+            }
 
-            // 저장된 파일의 URL 반환 (예: "/uploads/{fileName}")
-            return "/uploads/" + fileName;
+            Path filePath = Paths.get(processedPath, fileName);
+            Files.createDirectories(filePath.getParent());
+            Files.copy(image.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+            // 리소스 매핑에 맞추어 URL 반환
+            return "http://localhost:8080/images/" + fileName;
         } catch (IOException e) {
             throw new RuntimeException("이미지 저장 중 오류 발생", e);
         }
     }
+
+
 
     /**
      * 기존 상품 정보를 업데이트합니다.
