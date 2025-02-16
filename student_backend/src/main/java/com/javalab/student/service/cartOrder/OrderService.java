@@ -1,5 +1,8 @@
 package com.javalab.student.service.cartOrder;
 
+import com.javalab.student.constant.OrderStatus;
+import com.javalab.student.constant.Role;
+import com.javalab.student.dto.cartOrder.AdminOrderDto;
 import com.javalab.student.dto.cartOrder.OrderDto;
 import com.javalab.student.dto.cartOrder.OrderHistDto;
 import com.javalab.student.dto.cartOrder.OrderItemDto;
@@ -18,6 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -132,5 +136,113 @@ public class OrderService {
         orderRepository.save(order);
 
         return order.getId();
+    }
+
+    /**
+     * 사용자 주문 목록 조회 (페이징)
+     * @param email 사용자 이메일
+     * @param pageable 페이징 정보
+     * @return 페이징된 주문 내역
+     */
+    @Transactional(readOnly = true)
+    public Page<OrderHistDto> getOrderListPage(String email, Pageable pageable) {
+        Page<Order> orders = orderRepository.findOrdersPageable(email, pageable); // 변경: findOrdersPageable() 메소드 호출
+        Long totalCount = orderRepository.countOrder(email);
+
+        List<OrderHistDto> orderHistDtos = new ArrayList<>();
+
+        for (Order order : orders) {
+            OrderHistDto orderHistDto = new OrderHistDto(order);
+            List<OrderItem> orderItems = order.getOrderItems();
+            for (OrderItem orderItem : orderItems) {
+                OrderItemDto orderItemDto = new OrderItemDto(orderItem, "");
+                orderHistDto.addOrderItemDto(orderItemDto);
+            }
+            orderHistDtos.add(orderHistDto);
+        }
+        return new PageImpl<>(orderHistDtos, pageable, totalCount);
+    }
+
+    /**
+     * 관리자용 주문 목록 조회
+     * 각 주문에 포함된 주문아이템(OrderItem)을 개별 행으로 변환하여 반환합니다.
+     */
+    public Page<AdminOrderDto> getAdminOrderItemList(Pageable pageable) {
+        // 모든 주문 조회 (필요시 조건 추가)
+        List<Order> orders = orderRepository.findAll();
+        List<AdminOrderDto> list = new ArrayList<>();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+        for (Order order : orders) {
+            String memberName = order.getMember().getName();
+            String orderDate = order.getOrderDate().format(formatter);
+
+            String shippingAddress = "";
+            if (order.getAddress() != null) {
+                shippingAddress = order.getAddress().getAddr() + " " +
+                        order.getAddress().getAddrDetail() + " (" +
+                        order.getAddress().getZipcode() + ")";
+            }
+
+            String paymentMethod = "";
+            if (order.getPayment() != null) {
+                paymentMethod = order.getPayment().getPaymentMethod();
+            }
+
+            // 각 주문 아이템마다 개별 행 생성
+            for (OrderItem orderItem : order.getOrderItems()) {
+                AdminOrderDto dto = AdminOrderDto.builder()
+                        // DataGrid의 고유 식별자로 주문아이템 id 사용
+                        .id(orderItem.getId())
+                        .orderId(order.getId())
+                        .memberName(memberName)
+                        .productName(orderItem.getProduct().getName())
+                        .quantity(orderItem.getCount())
+                        // 각 주문아이템별 총액: 주문 가격 × 수량
+                        .totalPrice(orderItem.getOrderPrice().multiply(
+                                new java.math.BigDecimal(orderItem.getCount())))
+                        .orderDate(orderDate)
+                        .shippingAddress(shippingAddress)
+                        .paymentMethod(paymentMethod)
+                        .orderStatus(order.getOrderStatus().toString())
+                        .build();
+                list.add(dto);
+            }
+        }
+        // 수동 페이징 처리: List 전체에서 요청된 페이지에 해당하는 subList 생성
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), list.size());
+        return new PageImpl<>(list.subList(start, end), pageable, list.size());
+    }
+
+    /**
+     * 주문 취소 (관리자용)
+     */
+    @Transactional
+    public void cancelOrderAdmin(Long orderId) {
+        try {
+            Order order = orderRepository.findById(orderId)
+                    .orElseThrow(() -> new EntityNotFoundException("주문을 찾을 수 없습니다."));
+
+            // 주문 상태 확인 및 취소 가능 여부 검증
+            if (order.getOrderStatus() == OrderStatus.CANCELED) {
+                throw new IllegalStateException("이미 취소된 주문입니다.");
+            }
+
+            // 배송 시작 이후에는 취소 불가
+            if (order.getOrderStatus() == OrderStatus.IN_TRANSIT ||
+                    order.getOrderStatus() == OrderStatus.DELIVERED ||
+                    order.getOrderStatus() == OrderStatus.ORDER_COMPLETED) {
+                throw new IllegalStateException("배송 시작 이후의 주문은 취소할 수 없습니다.");
+            }
+
+            order.cancelOrder();
+            orderRepository.save(order);
+
+        } catch (IllegalStateException e) { // IllegalStateException으로 catch
+            throw e; // 그대로 다시 던지기
+        } catch (Exception e) {
+            throw new RuntimeException("주문 취소 중 오류가 발생했습니다: " + e.getMessage()); // 다른 예외는 기존 방식 유지 (필요하다면 더 구체적인 예외 처리)
+        }
     }
 }

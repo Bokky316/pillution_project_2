@@ -90,4 +90,35 @@ public class OrderItem extends BaseEntity {
                 .build();
         return orderItemDto;
     }
+
+    /**
+     * 주문 취소 시 재고 증가 (관리자)
+     */
+    public void cancelAndAddStock() {
+        // 기존 cancel() 메서드 호출
+        this.cancel();
+
+        // 재고 안전하게 증가
+        if (this.getProduct() != null && this.getCount() != null) {
+            this.getProduct().addStock(this.getCount());
+        }
+    }
+
+    /**
+     * 주문 생성 시 재고 감소 (관리자)
+     */
+    public static OrderItem createOrderItemWithStock(Product product, int count) {
+        // 재고 체크 및 감소
+        if (product.getStock() < count) {
+            throw new IllegalStateException("상품의 재고가 부족합니다. (현재 재고 수량: " + product.getStock() + ")");
+        }
+
+        // 기존 createOrderItem 호출
+        OrderItem orderItem = createOrderItem(product, count);
+
+        // 재고 안전하게 감소
+        product.setStock(product.getStock() - count);
+
+        return orderItem;
+    }
 }

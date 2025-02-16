@@ -34,4 +34,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleNoResourceFoundException(NoResourceFoundException ex) {
         return ResponseEntity.notFound().build();
     }
+
+    /**
+     * IllegalStateException 예외 처리기 (주문 취소 실패, 재고 부족 등)
+     * - 특정 비즈니스 로직 실패에 대한 예외 처리
+     * - 400 Bad Request 상태 코드와 함께 오류 메시지 반환
+     */
+    @ExceptionHandler(IllegalStateException.class) // ✅ 추가된 부분
+    public ResponseEntity<String> handleIllegalStateException(IllegalStateException e) { // ✅ 추가된 부분
+        log.warn("IllegalStateException: {}", e.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(e.getMessage()); // 클라이언트 에러 (400)
+    }
+
 }

@@ -108,5 +108,23 @@ public class Product {
     public String getImageUrl() {
         return this.mainImageUrl;
     }
+
+    /**
+     * 재고 감소
+     */
+    public void removeStock(int quantity) {
+        int restStock = this.stock - quantity;
+        if (restStock < 0) {
+            throw new IllegalStateException("상품의 재고가 부족합니다. (현재 재고 수량: " + this.stock + ")");
+        }
+        this.stock = restStock;
+    }
+
+    /**
+     * 재고 증가
+     */
+    public void addStock(int quantity) {
+        this.stock += quantity;
+    }
 }
 

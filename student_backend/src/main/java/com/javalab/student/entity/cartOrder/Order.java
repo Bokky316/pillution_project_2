@@ -149,4 +149,11 @@ public class Order extends BaseEntity {
                 .parcelCd(this.parcelCd)
                 .build();
     }
+
+    public void cancelOrderAdmin() {
+        this.orderStatus = OrderStatus.CANCELED;
+        for (OrderItem orderItem : orderItems) {
+            orderItem.cancelAndAddStock(); // 새로운 메서드 사용
+        }
+    }
 }

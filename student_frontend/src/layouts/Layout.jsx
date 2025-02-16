@@ -33,7 +33,7 @@ const Layout = ({ children }) => {
             <Box sx={{
                 flexGrow: 1,
                 width: '100%',
-                maxWidth: isHomePage ? "100%" : isAdminPage ? '50%' : '480px', // 홈 페이지: 100%, 어드민: 50%, 그 외: 480px 모바일 중심 UI의 폭 (보통 360~480px)
+                maxWidth: isHomePage ? "100%" : isAdminPage ? '60%' : '480px', // 홈 페이지: 100%, 어드민: 50%, 그 외: 480px 모바일 중심 UI의 폭 (보통 360~480px)
                 margin: isHomePage ? '64px 0 0 0' : '0 auto', // 홈 페이지에서만 marginTop 적용, 나머지는 '0 auto'
                 padding: isHomePage ? 0 : '20px', // 홈 페이지에서만 padding 제거, 나머지는 '20px'
                 paddingTop: isHomePage ? 0 : '80px', // 홈 페이지에서는 paddingTop 제거, 나머지는 '80px'
